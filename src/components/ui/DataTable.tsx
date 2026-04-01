@@ -27,7 +27,6 @@ export function DataTable<TData, TValue>({
     isLoading,
 }: DataTableProps<TData, TValue>) {
 
-    // Initialize the TanStack Table engine
     const table = useReactTable({
         data,
         columns,
@@ -35,15 +34,14 @@ export function DataTable<TData, TValue>({
         state: { pagination },
         onPaginationChange: setPagination,
         getCoreRowModel: getCoreRowModel(),
-        manualPagination: true, // This tells the table: "The server will handle the math, just show what I give you."
+        manualPagination: true,
     });
 
     return (
         <div className="space-y-4">
-            {/* Table Container */}
-            <div className="bg-[var(--bg-surface)] border border-gray-200 dark:border-gray-800 rounded-2xl shadow-sm overflow-hidden relative">
+            {/* 1. CONTAINER: Changed dark:border-gray-800 to dark:border-white/10 */}
+            <div className="bg-[var(--bg-surface)] border border-gray-200 dark:border-white/10 rounded-2xl shadow-sm overflow-hidden relative">
 
-                {/* Loading Overlay */}
                 {isLoading && (
                     <div className="absolute inset-0 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm z-10 flex items-center justify-center">
                         <div className="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
@@ -52,7 +50,9 @@ export function DataTable<TData, TValue>({
 
                 <div className="overflow-x-auto">
                     <table className="w-full text-left text-sm whitespace-nowrap">
-                        <thead className="bg-gray-50/50 dark:bg-gray-800/20 border-b border-gray-200 dark:border-gray-800 text-[var(--text-muted)] font-medium">
+
+                        {/* 2. HEADER: Changed bg and border to use translucent white */}
+                        <thead className="bg-gray-50/50 dark:bg-white/[0.02] border-b border-gray-200 dark:border-white/10 text-[var(--text-muted)] font-medium">
                             {table.getHeaderGroups().map((headerGroup) => (
                                 <tr key={headerGroup.id}>
                                     {headerGroup.headers.map((header) => (
@@ -68,10 +68,13 @@ export function DataTable<TData, TValue>({
                                 </tr>
                             ))}
                         </thead>
-                        <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
+
+                        {/* 3. ROW DIVIDERS: Changed dark:divide-gray-800 to dark:divide-white/5 */}
+                        <tbody className="divide-y divide-gray-200 dark:divide-white/5">
                             {table.getRowModel().rows?.length ? (
                                 table.getRowModel().rows.map((row) => (
-                                    <tr key={row.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/20 transition-colors group">
+                                    /* 4. ROW HOVER: Changed to dark:hover:bg-white/[0.02] */
+                                    <tr key={row.id} className="hover:bg-gray-50/50 dark:hover:bg-white/[0.02] transition-colors group">
                                         {row.getVisibleCells().map((cell) => (
                                             <td key={cell.id} className="px-6 py-4">
                                                 {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -94,34 +97,34 @@ export function DataTable<TData, TValue>({
             {/* Pagination Controls */}
             <div className="flex items-center justify-between px-2">
                 <div className="text-sm text-[var(--text-muted)]">
-                    Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
+                    Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount() || 1}
                 </div>
                 <div className="flex items-center space-x-2">
                     <button
                         onClick={() => table.setPageIndex(0)}
                         disabled={!table.getCanPreviousPage()}
-                        className="p-2 rounded-lg border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 transition-colors"
+                        className="p-2 rounded-lg border border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/[0.05] disabled:opacity-50 transition-colors"
                     >
                         <ChevronsLeft className="w-4 h-4" />
                     </button>
                     <button
                         onClick={() => table.previousPage()}
                         disabled={!table.getCanPreviousPage()}
-                        className="p-2 rounded-lg border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 transition-colors"
+                        className="p-2 rounded-lg border border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/[0.05] disabled:opacity-50 transition-colors"
                     >
                         <ChevronLeft className="w-4 h-4" />
                     </button>
                     <button
                         onClick={() => table.nextPage()}
                         disabled={!table.getCanNextPage()}
-                        className="p-2 rounded-lg border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 transition-colors"
+                        className="p-2 rounded-lg border border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/[0.05] disabled:opacity-50 transition-colors"
                     >
                         <ChevronRight className="w-4 h-4" />
                     </button>
                     <button
                         onClick={() => table.setPageIndex(table.getPageCount() - 1)}
                         disabled={!table.getCanNextPage()}
-                        className="p-2 rounded-lg border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 transition-colors"
+                        className="p-2 rounded-lg border border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/[0.05] disabled:opacity-50 transition-colors"
                     >
                         <ChevronsRight className="w-4 h-4" />
                     </button>
