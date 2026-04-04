@@ -12,8 +12,7 @@ import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
 import { AssetRegistry } from './pages/AssetRegistry';
 import { Departments } from './pages/Departments';
-
-const EmployeesPlaceholder = () => (<></>);
+import { Employees } from './pages/Employees';
 
 function App() {
   return (
@@ -29,7 +28,7 @@ function App() {
               <Route index element={<Dashboard />} />
               <Route path="assets" element={<AssetRegistry />} />
               <Route path="departments" element={<Departments />} />
-              <Route path="employees" element={<EmployeesPlaceholder />} />
+              <Route path="employees" element={<Employees />} />
             </Route>
           </Routes>
         </BrowserRouter>

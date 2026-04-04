@@ -1,5 +1,6 @@
 // src/services/departmentService.ts
 import Dexie, { type Table } from 'dexie';
+import { db } from './db';
 import { v4 as uuidv4 } from 'uuid';
 
 // 1. Our standard TypeScript interface
@@ -12,24 +13,6 @@ export interface Department {
     deleted_at: string | null;
 }
 
-// 2. Define the Dexie Database Class
-export class GamitDatabase extends Dexie {
-    departments!: Table<Department>;
-
-    constructor() {
-        super('GamitDB');
-
-        // Define tables and indexes. 
-        // The first item 'id' is the primary key. 
-        // '&code' means we want a unique index on the code column.
-        this.version(1).stores({
-            departments: 'id, &code, name, deleted_at'
-        });
-    }
-}
-
-// 3. Initialize the DB instance
-export const db = new GamitDatabase();
 
 // 4. The Service Object (The API remains exactly the same!)
 export const departmentService = {
