@@ -13,6 +13,7 @@ import { Dashboard } from './pages/Dashboard';
 import { AssetRegistry } from './pages/AssetRegistry';
 import { Departments } from './pages/Departments';
 import { Employees } from './pages/Employees';
+import { AssetCategories } from './pages/AssetCategories';
 
 function App() {
   return (
@@ -29,6 +30,7 @@ function App() {
               <Route path="assets" element={<AssetRegistry />} />
               <Route path="departments" element={<Departments />} />
               <Route path="employees" element={<Employees />} />
+              <Route path="assetcategories" element={<AssetCategories />} />
             </Route>
           </Routes>
         </BrowserRouter>

@@ -2,19 +2,21 @@
 import Dexie, { type Table } from 'dexie';
 import type { Department } from './departmentService';
 import type { Employee } from './employeeService';
+import type { AssetCategory } from './assetCategoryService'; // <-- We will create this next
 
 export class GamitDatabase extends Dexie {
     departments!: Table<Department>;
     employees!: Table<Employee>;
+    assetCategories!: Table<AssetCategory>; // <-- Add table
 
     constructor() {
         super('GamitDB');
 
-        // Version 2: Added the employees table
-        this.version(2).stores({
+        // Bump version to 3 and add the new table schema
+        this.version(3).stores({
             departments: 'id, &code, name, deleted_at',
-            // We index departmentId so we can quickly find all employees in a specific department later
-            employees: 'id, &employeeNo, firstName, lastName, departmentId, deleted_at'
+            employees: 'id, &employeeNo, firstName, lastName, departmentId, deleted_at',
+            assetCategories: 'id, &code, name, deleted_at' // <-- New schema
         });
     }
 }

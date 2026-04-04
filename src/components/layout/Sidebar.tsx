@@ -8,7 +8,8 @@ import {
     FileText,
     Settings,
     X,
-    Sparkles
+    Sparkles,
+    Tags
 } from 'lucide-react';
 
 // 1. Explicitly define our props so TypeScript is happy
@@ -27,10 +28,11 @@ const navGroups = [
         ]
     },
     {
-        title: 'Directory',
+        title: 'Master Data',
         links: [
             { name: 'Departments', path: '/departments', icon: Building2 },
             { name: 'Employees', path: '/employees', icon: Users },
+            { name: 'Asset Categories', path: '/assetcategories', icon: Tags },
         ]
     },
     {
