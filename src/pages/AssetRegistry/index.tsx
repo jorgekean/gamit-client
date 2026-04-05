@@ -1,8 +1,10 @@
 // src/pages/AssetRegistry/AssetRegistry.tsx
 import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Plus, Edit2, Trash2, Package, Search, ChevronRight, ChevronLeft, QrCode, X } from 'lucide-react';
-import { AssetQRCode } from '../../components/ui/AssetQRCode';
+import {
+    Plus, Edit2, Trash2, Package, Search,
+    ChevronRight, ChevronLeft, QrCode, X, Eye, History
+} from 'lucide-react';
 import type { ColumnDef, PaginationState } from '@tanstack/react-table';
 import { toast } from 'sonner';
 
@@ -16,6 +18,8 @@ import { useConfirm } from '../../contexts/ConfirmContext';
 // Components
 import { Drawer } from '../../components/ui/Drawer';
 import { DataTable } from '../../components/ui/DataTable';
+import { AssetQRCode } from '../../components/ui/AssetQRCode';
+import { AssetAuditTrail } from '../../components/ui/AuditTrail';
 import type { Asset, AssetStatus } from '../../services/assetService';
 
 const STEPS = ['Identity', 'Financials', 'Specs', 'Assignment'];
@@ -30,10 +34,13 @@ export function AssetRegistry() {
     const [searchParams, setSearchParams] = useSearchParams();
     const action = searchParams.get('action');
     const targetId = searchParams.get('id');
+    const viewId = searchParams.get('view');
+    const qrId = searchParams.get('qr');
+    const historyId = searchParams.get('history');
 
     const [searchTerm, setSearchTerm] = useState('');
     const [isSaving, setIsSaving] = useState(false);
-    const [step, setStep] = useState(0); // For the Multi-Step Form
+    const [step, setStep] = useState(0);
     const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: 10 });
 
     const initialFormState = {
@@ -44,7 +51,6 @@ export function AssetRegistry() {
     };
     const [formData, setFormData] = useState(initialFormState);
 
-    // Derived State for Tables & Filters
     const filteredData = useMemo(() => {
         if (!searchTerm) return assets;
         const lower = searchTerm.toLowerCase();
@@ -59,16 +65,22 @@ export function AssetRegistry() {
         return filteredData.slice(start, start + pagination.pageSize);
     }, [filteredData, pagination]);
 
-    // Filter employees based on selected department in Step 4
     const availableEmployees = useMemo(() => {
         if (!formData.departmentId) return [];
         return employees.filter(emp => emp.departmentId === formData.departmentId);
     }, [formData.departmentId, employees]);
 
-    // Reset pagination on search
+    const viewedAsset = useMemo(() => assets.find(a => a.id === viewId), [assets, viewId]);
+
+    const getCategoryName = (id: string) => categories.find(c => c.id === id)?.name || 'Unknown';
+    const getDeptName = (id?: string | null) => departments.find(d => d.id === id)?.name || 'Unassigned';
+    const getEmpName = (id?: string | null) => {
+        const e = employees.find(emp => emp.id === id);
+        return e ? `${e.firstName} ${e.lastName}` : 'Unassigned';
+    };
+
     useEffect(() => setPagination(prev => ({ ...prev, pageIndex: 0 })), [searchTerm]);
 
-    // Load data for Editing
     useEffect(() => {
         if (action === 'edit' && targetId) {
             getById(targetId).then(asset => {
@@ -78,7 +90,7 @@ export function AssetRegistry() {
                         departmentId: asset.departmentId || '',
                         employeeId: asset.employeeId || ''
                     });
-                    setStep(0); // Start at step 1 when opening
+                    setStep(0);
                 }
             });
         } else {
@@ -87,20 +99,13 @@ export function AssetRegistry() {
         }
     }, [action, targetId, getById]);
 
-    // Actions
     const closeDrawer = () => setSearchParams({});
 
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (step < STEPS.length - 1) {
-            setStep(step + 1); // If not on last step, just go to next step
-            return;
-        }
-
         setIsSaving(true);
         const toastId = toast.loading('Saving asset...');
 
-        // Clean up empty strings to null for DB relationships
         const payload = {
             ...formData,
             departmentId: formData.departmentId === '' ? null : formData.departmentId,
@@ -143,19 +148,6 @@ export function AssetRegistry() {
         }
     };
 
-    // Helper renderers for the Table    
-    const getCategoryName = (id: string) => categories.find(c => c.id === id)?.name || 'Unknown';
-
-    // NEW HELPERS FOR THE VIEW DRAWER
-    const getDeptName = (id?: string | null) => departments.find(d => d.id === id)?.name || 'Unassigned';
-    const getEmpName = (id?: string | null) => {
-        const e = employees.find(emp => emp.id === id);
-        return e ? `${e.firstName} ${e.lastName}` : 'Unassigned';
-    };
-
-    const viewId = searchParams.get('view');
-    const viewedAsset = useMemo(() => assets.find(a => a.id === viewId), [assets, viewId]);
-
     const columns = useMemo<ColumnDef<Asset>[]>(
         () => [
             {
@@ -178,9 +170,9 @@ export function AssetRegistry() {
                 header: 'Status',
                 cell: ({ row }) => {
                     const status = row.original.status;
-                    if (status === 'Serviceable') return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/30">Serviceable</span>;
-                    if (status === 'Unserviceable') return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-400 border border-red-200 dark:border-red-800/30">Unserviceable</span>;
-                    return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400 border border-amber-200 dark:border-amber-800/30">For Repair</span>;
+                    if (status === 'Serviceable') return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700 border border-emerald-200">Serviceable</span>;
+                    if (status === 'Unserviceable') return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700 border border-red-200">Unserviceable</span>;
+                    return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700 border border-amber-200">For Repair</span>;
                 },
             },
             {
@@ -197,25 +189,19 @@ export function AssetRegistry() {
                 header: () => <div className="text-right">Actions</div>,
                 cell: ({ row }) => (
                     <div className="flex items-center justify-end gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
-                        {/* NEW QR BUTTON */}
-                        <button
-                            onClick={() => setSearchParams({ qr: row.original.id })}
-                            className="p-2 text-gray-400 hover:text-primary-600 rounded-lg transition-colors"
-                            title="Generate QR Tag"
-                        >
+                        <button onClick={() => setSearchParams({ history: row.original.id })} className="p-2 text-gray-400 hover:text-indigo-600 rounded-lg transition-colors" title="View Audit Trail">
+                            <History className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => setSearchParams({ view: row.original.id })} className="p-2 text-gray-400 hover:text-blue-600 rounded-lg transition-colors" title="View Details">
+                            <Eye className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => setSearchParams({ qr: row.original.id })} className="p-2 text-gray-400 hover:text-primary-600 rounded-lg transition-colors" title="Generate QR Tag">
                             <QrCode className="w-4 h-4" />
                         </button>
-                        {/* Existing Edit and Delete buttons */}
-                        <button
-                            onClick={() => setSearchParams({ action: 'edit', id: row.original.id })}
-                            className="p-2 text-gray-400 hover:text-primary-600 rounded-lg transition-colors"
-                        >
+                        <button onClick={() => setSearchParams({ action: 'edit', id: row.original.id })} className="p-2 text-gray-400 hover:text-primary-600 rounded-lg transition-colors" title="Edit Asset">
                             <Edit2 className="w-4 h-4" />
                         </button>
-                        <button
-                            onClick={() => handleDelete(row.original.id, row.original.name)}
-                            className="p-2 text-gray-400 hover:text-red-600 rounded-lg transition-colors"
-                        >
+                        <button onClick={() => handleDelete(row.original.id, row.original.name)} className="p-2 text-gray-400 hover:text-red-600 rounded-lg transition-colors" title="Delete Asset">
                             <Trash2 className="w-4 h-4" />
                         </button>
                     </div>
@@ -228,17 +214,14 @@ export function AssetRegistry() {
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
 
+            {/* Page Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Asset Registry</h1>
                     <p className="text-sm text-[var(--text-muted)] mt-1">Master database of all municipal properties and equipment.</p>
                 </div>
-                <button
-                    onClick={() => setSearchParams({ action: 'new' })}
-                    className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold rounded-xl shadow-sm transition-all"
-                >
-                    <Plus className="w-4 h-4" />
-                    Register Asset
+                <button onClick={() => setSearchParams({ action: 'new' })} className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold rounded-xl shadow-sm transition-all">
+                    <Plus className="w-4 h-4" /> Register Asset
                 </button>
             </div>
 
@@ -257,6 +240,7 @@ export function AssetRegistry() {
                 </div>
             </div>
 
+            {/* Data Table */}
             {assets.length === 0 && !loadingAssets && !searchTerm ? (
                 <div className="bg-[var(--bg-surface)] border border-gray-200 dark:border-white/10 rounded-2xl shadow-sm p-12 text-center flex flex-col items-center">
                     <Package className="w-12 h-12 text-gray-300 mb-4" />
@@ -274,37 +258,36 @@ export function AssetRegistry() {
                 />
             )}
 
-            {/* The Multi-Step Drawer Form */}
-            <Drawer
-                isOpen={!!action}
-                onClose={closeDrawer}
-                title={action === 'new' ? 'Register New Asset' : 'Edit Asset'}
-            >
+            {/* DRAWER 1: Multi-Step Registration Form */}
+            <Drawer isOpen={!!action} onClose={closeDrawer} title={action === 'new' ? 'Register New Asset' : 'Edit Asset'}>
                 <div className="mb-8">
-                    {/* Progress Indicators */}
                     <div className="flex items-center justify-between mb-2">
                         {STEPS.map((stepName, i) => (
                             <React.Fragment key={stepName}>
-                                <div className={`flex flex-col items-center w-full relative z-10`}>
-                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${i <= step ? 'bg-primary-600 text-white shadow-md shadow-primary-500/30' : 'bg-gray-100 dark:bg-gray-800 text-gray-400'
-                                        }`}>
+                                <div className="flex flex-col items-center w-full relative z-10">
+                                    <button
+                                        type="button"
+                                        onClick={() => setStep(i)}
+                                        className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 hover:scale-110 ${i === step
+                                            ? 'bg-primary-600 text-white shadow-md shadow-primary-500/30 ring-2 ring-primary-500 ring-offset-2 dark:ring-offset-gray-900'
+                                            : i < step
+                                                ? 'bg-primary-500 text-white'
+                                                : 'bg-gray-100 dark:bg-gray-800 text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                                            }`}
+                                    >
                                         {i + 1}
-                                    </div>
-                                    <span className={`text-[10px] mt-2 font-medium hidden sm:block ${i <= step ? 'text-gray-900 dark:text-gray-200' : 'text-gray-400'}`}>
+                                    </button>
+                                    <span className={`text-[10px] mt-2 font-medium hidden sm:block ${i === step ? 'text-primary-600 dark:text-primary-400' : i < step ? 'text-gray-900 dark:text-gray-200' : 'text-gray-400'}`}>
                                         {stepName}
                                     </span>
                                 </div>
-                                {i < STEPS.length - 1 && (
-                                    <div className={`flex-1 h-1 mx-2 rounded-full transition-colors ${i < step ? 'bg-primary-500' : 'bg-gray-100 dark:bg-gray-800'}`} />
-                                )}
+                                {i < STEPS.length - 1 && <div className={`flex-1 h-1 mx-2 rounded-full transition-colors ${i < step ? 'bg-primary-500' : 'bg-gray-100 dark:bg-gray-800'}`} />}
                             </React.Fragment>
                         ))}
                     </div>
                 </div>
 
                 <form onSubmit={handleSave} className="space-y-6">
-
-                    {/* STEP 1: IDENTITY */}
                     {step === 0 && (
                         <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
                             <div className="space-y-1.5">
@@ -320,12 +303,11 @@ export function AssetRegistry() {
                             </div>
                             <div className="space-y-1.5">
                                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">Asset Name / Description <span className="text-red-500">*</span></label>
-                                <input type="text" required value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} placeholder="e.g. MacBook Pro 16-inch M3" className="block w-full px-4 py-2.5 bg-gray-50/50 dark:bg-gray-900/50 border border-gray-200 dark:border-white/10 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500" />
+                                <input type="text" required value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} placeholder="e.g. MacBook Pro 16-inch" className="block w-full px-4 py-2.5 bg-gray-50/50 dark:bg-gray-900/50 border border-gray-200 dark:border-white/10 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500" />
                             </div>
                         </div>
                     )}
 
-                    {/* STEP 2: FINANCIALS */}
                     {step === 1 && (
                         <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
                             <div className="space-y-1.5">
@@ -339,7 +321,6 @@ export function AssetRegistry() {
                         </div>
                     )}
 
-                    {/* STEP 3: SPECS */}
                     {step === 2 && (
                         <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
                             <div className="grid grid-cols-2 gap-4">
@@ -367,36 +348,29 @@ export function AssetRegistry() {
                         </div>
                     )}
 
-                    {/* STEP 4: ASSIGNMENT */}
                     {step === 3 && (
                         <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
                             <div className="p-4 bg-blue-50 dark:bg-blue-500/10 rounded-xl border border-blue-100 dark:border-blue-500/20 mb-4">
                                 <p className="text-sm text-blue-700 dark:text-blue-400 font-medium">Initial Issuance</p>
-                                <p className="text-xs text-blue-600/70 dark:text-blue-400/70 mt-1">Leave these blank if the asset is currently unassigned and sitting in the GSO stockroom.</p>
+                                <p className="text-xs text-blue-600/70 mt-1">Leave blank if the asset is currently unassigned (in storage).</p>
                             </div>
-
                             <div className="space-y-1.5">
                                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">Assigned Department</label>
-                                <select value={formData.departmentId} onChange={e => {
-                                    setFormData({ ...formData, departmentId: e.target.value, employeeId: '' }); // Reset employee if dept changes
-                                }} className="block w-full px-4 py-2.5 bg-gray-50/50 dark:bg-gray-900/50 border border-gray-200 dark:border-white/10 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500">
+                                <select value={formData.departmentId} onChange={e => setFormData({ ...formData, departmentId: e.target.value, employeeId: '' })} className="block w-full px-4 py-2.5 bg-gray-50/50 dark:bg-gray-900/50 border border-gray-200 dark:border-white/10 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500">
                                     <option value="">-- Unassigned --</option>
                                     {departments.map(d => <option key={d.id} value={d.id}>{d.code} - {d.name}</option>)}
                                 </select>
                             </div>
-
                             <div className="space-y-1.5">
                                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">Assigned Employee (End User)</label>
                                 <select value={formData.employeeId} disabled={!formData.departmentId} onChange={e => setFormData({ ...formData, employeeId: e.target.value })} className="block w-full px-4 py-2.5 bg-gray-50/50 dark:bg-gray-900/50 border border-gray-200 dark:border-white/10 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 disabled:opacity-50">
                                     <option value="">-- Unassigned --</option>
-                                    {availableEmployees.map(e => <option key={e.id} value={e.id}>{e.firstName} {e.lastName} ({e.position})</option>)}
+                                    {availableEmployees.map(e => <option key={e.id} value={e.id}>{e.firstName} {e.lastName}</option>)}
                                 </select>
-                                {!formData.departmentId && <p className="text-xs text-gray-500 mt-1">Select a department first to see available employees.</p>}
                             </div>
                         </div>
                     )}
 
-                    {/* Form Navigation Controls */}
                     <div className="pt-6 mt-8 border-t border-gray-200 dark:border-gray-800 flex justify-between gap-3">
                         {step === 0 ? (
                             <button type="button" onClick={closeDrawer} className="px-5 py-2.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 text-sm font-semibold rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
@@ -408,74 +382,38 @@ export function AssetRegistry() {
                             </button>
                         )}
 
-                        <button type="submit" disabled={isSaving} className="inline-flex items-center px-6 py-2.5 bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold rounded-xl shadow-sm disabled:opacity-50 transition-all">
-                            {isSaving ? 'Saving...' : step === STEPS.length - 1 ? 'Complete Registration' : 'Next Step'}
-                            {step < STEPS.length - 1 && <ChevronRight className="w-4 h-4 ml-1" />}
-                        </button>
+                        <div className="flex gap-3">
+                            {step < STEPS.length - 1 && (
+                                <button type="button" onClick={() => setStep(step + 1)} className="inline-flex items-center px-5 py-2.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 text-sm font-semibold rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                                    Next <ChevronRight className="w-4 h-4 ml-1" />
+                                </button>
+                            )}
+                            {(step === STEPS.length - 1 || action === 'edit') && (
+                                <button type="submit" disabled={isSaving} className="inline-flex items-center px-6 py-2.5 bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold rounded-xl shadow-sm disabled:opacity-50 transition-all">
+                                    {isSaving ? 'Saving...' : action === 'edit' ? 'Save Changes' : 'Complete Registration'}
+                                </button>
+                            )}
+                        </div>
                     </div>
                 </form>
             </Drawer>
-            {/* THE QR CODE MODAL */}
-            {searchParams.get('qr') && (
-                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-                    <div
-                        className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm transition-opacity"
-                        onClick={() => setSearchParams({})}
-                    />
-                    <div className="relative w-full max-w-sm bg-[var(--bg-surface)] rounded-2xl shadow-2xl p-6 animate-in zoom-in-95 duration-200">
-                        <button
-                            onClick={() => setSearchParams({})}
-                            className="absolute top-4 right-4 p-2 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
-                        >
-                            <X className="w-4 h-4" />
-                        </button>
 
-                        <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-6 text-center">Asset Tag Generated</h2>
-
-                        {/* Render the sticker */}
-                        {assets.find(a => a.id === searchParams.get('qr')) && (
-                            <AssetQRCode
-                                propertyNo={assets.find(a => a.id === searchParams.get('qr'))!.propertyNo}
-                                name={assets.find(a => a.id === searchParams.get('qr'))!.name}
-                                assetId={assets.find(a => a.id === searchParams.get('qr'))!.id}
-                            />
-                        )}
-
-                        <div className="mt-6 flex gap-3">
-                            <button
-                                onClick={() => window.print()}
-                                className="w-full px-4 py-2.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-900 dark:text-white text-sm font-semibold rounded-xl transition-colors"
-                            >
-                                Print Tag
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* THE READ-ONLY DETAILS DRAWER (MOBILE FIRST) */}
-            <Drawer
-                isOpen={!!viewId}
-                onClose={() => setSearchParams({})}
-                title="Asset Details"
-            >
+            {/* DRAWER 2: Read-Only Details View */}
+            <Drawer isOpen={!!viewId} onClose={() => setSearchParams({})} title="Asset Details">
                 {viewedAsset && (
                     <div className="space-y-6 pb-6 animate-in fade-in duration-300">
-
-                        {/* 1. Header & Status */}
                         <div className="flex items-start justify-between bg-gray-50 dark:bg-gray-800/50 p-5 rounded-2xl border border-gray-100 dark:border-white/5">
                             <div>
                                 <p className="text-xs font-bold tracking-widest text-[var(--text-muted)] uppercase mb-1">Property Number</p>
                                 <h2 className="text-2xl font-black text-gray-900 dark:text-white font-mono">{viewedAsset.propertyNo}</h2>
                             </div>
                             <div>
-                                {viewedAsset.status === 'Serviceable' && <span className="px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30">Serviceable</span>}
-                                {viewedAsset.status === 'Unserviceable' && <span className="px-3 py-1.5 rounded-full text-xs font-bold bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400 border border-red-200 dark:border-red-500/30">Unserviceable</span>}
-                                {viewedAsset.status === 'For Repair' && <span className="px-3 py-1.5 rounded-full text-xs font-bold bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400 border border-amber-200 dark:border-amber-500/30">For Repair</span>}
+                                {viewedAsset.status === 'Serviceable' && <span className="px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 border border-emerald-200">Serviceable</span>}
+                                {viewedAsset.status === 'Unserviceable' && <span className="px-3 py-1.5 rounded-full text-xs font-bold bg-red-100 text-red-700 border border-red-200">Unserviceable</span>}
+                                {viewedAsset.status === 'For Repair' && <span className="px-3 py-1.5 rounded-full text-xs font-bold bg-amber-100 text-amber-700 border border-amber-200">For Repair</span>}
                             </div>
                         </div>
 
-                        {/* 2. Primary Identity */}
                         <div>
                             <h3 className="text-lg font-bold text-gray-900 dark:text-white leading-tight">{viewedAsset.name}</h3>
                             <p className="text-sm text-primary-600 dark:text-primary-400 font-medium mt-1">{getCategoryName(viewedAsset.categoryId)}</p>
@@ -483,7 +421,6 @@ export function AssetRegistry() {
 
                         <hr className="border-gray-100 dark:border-white/10" />
 
-                        {/* 3. Assignment Info (Crucial for Audits) */}
                         <div>
                             <h4 className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-3">Current Assignment</h4>
                             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-white/10 overflow-hidden">
@@ -498,7 +435,6 @@ export function AssetRegistry() {
                             </div>
                         </div>
 
-                        {/* 4. Specifications Grid */}
                         <div>
                             <h4 className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-3">Specifications</h4>
                             <div className="grid grid-cols-2 gap-3">
@@ -517,12 +453,11 @@ export function AssetRegistry() {
                             </div>
                         </div>
 
-                        {/* 5. Financials Grid */}
                         <div>
                             <h4 className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-3">Financials</h4>
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="bg-emerald-50 dark:bg-emerald-500/5 p-3 rounded-xl border border-emerald-100 dark:border-emerald-500/10">
-                                    <p className="text-xs text-emerald-600/70 dark:text-emerald-400/70 mb-1">Acquisition Cost</p>
+                                    <p className="text-xs text-emerald-600/70 mb-1">Acquisition Cost</p>
                                     <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">
                                         {new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(viewedAsset.cost)}
                                     </p>
@@ -534,25 +469,63 @@ export function AssetRegistry() {
                             </div>
                         </div>
 
-                        {/* Actions */}
+                        {/* Plug-and-Play Audit Trail */}
+                        <AssetAuditTrail assetId={viewedAsset.id} />
+
                         <div className="pt-6 mt-2 border-t border-gray-200 dark:border-gray-800 flex gap-3">
-                            <button
-                                onClick={() => setSearchParams({ qr: viewedAsset.id })}
-                                className="flex-1 px-4 py-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 text-sm font-semibold rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors flex items-center justify-center gap-2"
-                            >
+                            <button onClick={() => setSearchParams({ qr: viewedAsset.id })} className="flex-1 px-4 py-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 text-sm font-semibold rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors flex items-center justify-center gap-2">
                                 <QrCode className="w-4 h-4" /> Tag
                             </button>
-                            <button
-                                onClick={() => setSearchParams({ action: 'edit', id: viewedAsset.id })}
-                                className="flex-[2] px-4 py-3 bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold rounded-xl shadow-sm transition-all flex items-center justify-center gap-2"
-                            >
+                            <button onClick={() => setSearchParams({ action: 'edit', id: viewedAsset.id })} className="flex-[2] px-4 py-3 bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold rounded-xl shadow-sm transition-all flex items-center justify-center gap-2">
                                 <Edit2 className="w-4 h-4" /> Edit Asset
                             </button>
                         </div>
-
                     </div>
                 )}
             </Drawer>
+
+            {/* DRAWER 3: Standalone Audit Trail */}
+            <Drawer isOpen={!!historyId} onClose={() => setSearchParams({})} title="Asset History Log">
+                {historyId && (
+                    <div className="pb-6 animate-in fade-in duration-300">
+                        <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-white/5">
+                            <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                                {assets.find(a => a.id === historyId)?.name}
+                            </p>
+                            <p className="text-xs text-gray-500 font-mono mt-1">
+                                {assets.find(a => a.id === historyId)?.propertyNo}
+                            </p>
+                        </div>
+                        <AssetAuditTrail assetId={historyId} />
+                    </div>
+                )}
+            </Drawer>
+
+            {/* MODAL: QR Code Generator */}
+            {qrId && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm transition-opacity" onClick={() => setSearchParams({})} />
+                    <div className="relative w-full max-w-sm bg-[var(--bg-surface)] rounded-2xl shadow-2xl p-6 animate-in zoom-in-95 duration-200">
+                        <button onClick={() => setSearchParams({})} className="absolute top-4 right-4 p-2 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors">
+                            <X className="w-4 h-4" />
+                        </button>
+                        <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-6 text-center">Asset Tag Generated</h2>
+                        {assets.find(a => a.id === qrId) && (
+                            <AssetQRCode
+                                propertyNo={assets.find(a => a.id === qrId)!.propertyNo}
+                                name={assets.find(a => a.id === qrId)!.name}
+                                assetId={assets.find(a => a.id === qrId)!.id}
+                            />
+                        )}
+                        <div className="mt-6 flex gap-3">
+                            <button onClick={() => window.print()} className="w-full px-4 py-2.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-900 dark:text-white text-sm font-semibold rounded-xl transition-colors">
+                                Print Tag
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
         </div>
     );
 }
