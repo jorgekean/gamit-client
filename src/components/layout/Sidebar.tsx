@@ -49,7 +49,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         <aside className={`
       fixed inset-y-4 left-4 z-50 w-64 bg-[var(--bg-surface)] rounded-2xl shadow-sm ring-1 ring-gray-200/50 dark:ring-gray-800 flex flex-col transform transition-transform duration-300 ease-in-out
       ${isOpen ? 'translate-x-0' : '-translate-x-[120%]'}
-      md:relative md:translate-x-0 md:inset-y-0 md:left-0
+      xl:relative xl:translate-x-0 xl:inset-y-0 xl:left-0
     `}>
             {/* Sidebar Header / Logo */}
             <div className="flex items-center justify-between h-20 px-6">
@@ -60,7 +60,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                     <span className="font-bold text-2xl tracking-tight text-gray-900 dark:text-white">Gamit</span>
                 </div>
                 <button
-                    className="md:hidden p-2 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+                    className="xl:hidden p-2 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
                     onClick={onClose}
                 >
                     <X className="w-5 h-5" />

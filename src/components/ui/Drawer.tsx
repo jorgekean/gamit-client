@@ -22,14 +22,16 @@ export function Drawer({ isOpen, onClose, title, children }: DrawerProps) {
             {/* Backdrop */}
             {isOpen && (
                 <div
-                    className="fixed inset-0 bg-gray-900/20 backdrop-blur-sm z-40 transition-opacity"
+                    className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm z-40 transition-opacity"
                     onClick={onClose}
                 />
             )}
 
-            {/* Drawer Panel */}
+            {/* Drawer Panel - Updated for Tablet Full Screen */}
             <div className={`
-        fixed inset-y-0 right-0 z-50 w-full max-w-md bg-[var(--bg-surface)] shadow-2xl ring-1 ring-gray-200/50 dark:ring-gray-800 transform transition-transform duration-300 ease-in-out flex flex-col
+        fixed inset-y-0 right-0 z-50 bg-[var(--bg-surface)] shadow-2xl ring-1 ring-gray-200/50 dark:ring-gray-800 
+        transform transition-transform duration-300 ease-in-out flex flex-col
+        w-full max-w-none xl:max-w-md 
         ${isOpen ? 'translate-x-0' : 'translate-x-full'}
       `}>
                 <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-800">

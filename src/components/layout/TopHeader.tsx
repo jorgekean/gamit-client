@@ -27,7 +27,7 @@ export function TopHeader({ onOpenSidebar }: TopHeaderProps) {
         <header className="h-16 bg-[var(--bg-surface)]/80 backdrop-blur-md rounded-2xl shadow-sm ring-1 ring-gray-200/50 dark:ring-gray-800 flex items-center justify-between px-4 sm:px-6 z-40">
             <div className="flex items-center flex-1">
                 <button
-                    className="md:hidden mr-4 p-2 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+                    className="xl:hidden mr-4 p-2 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
                     onClick={onOpenSidebar}
                 >
                     <Menu className="w-5 h-5" />
