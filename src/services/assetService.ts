@@ -29,12 +29,44 @@ export interface Asset {
     deleted_at: string | null;
 }
 
+export interface AssetFilters {
+    searchTerm?: string;
+    deptId?: string | null;
+    employeeId?: string | null;
+    status?: string | null;
+    categoryId?: string | null;
+}
+
 export const assetService = {
-    async getAll(): Promise<Asset[]> {
-        return await db.assets
-            .filter(asset => asset.deleted_at === null)
-            .reverse() // Newest first
-            .sortBy('created_at');
+    async getAll(filters?: AssetFilters): Promise<Asset[]> {
+        const collection = db.assets.toCollection();
+        let results = await collection.reverse().sortBy('created_at');
+
+        // Filter the results
+        results = results.filter(asset => {
+            // CRITICAL: Only show records that have NOT been soft-deleted
+            const isNotDeleted = asset.deleted_at === null;
+
+            if (filters) {
+                const { searchTerm, deptId, employeeId, status, categoryId } = filters;
+
+                const matchesSearch = !searchTerm ||
+                    asset.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    asset.propertyNo.toLowerCase().includes(searchTerm.toLowerCase());
+
+                const matchesDept = !deptId || asset.departmentId === deptId;
+                const matchesEmp = !employeeId || asset.employeeId === employeeId;
+                const matchesStatus = !status || asset.status === status;
+                const matchesCat = !categoryId || asset.categoryId === categoryId;
+
+                return isNotDeleted && matchesSearch && matchesDept && matchesEmp && matchesStatus && matchesCat;
+            }
+
+            // If no filters are provided, we still must check the deleted status
+            return isNotDeleted;
+        });
+
+        return results;
     },
 
     async getById(id: string): Promise<Asset | undefined> {

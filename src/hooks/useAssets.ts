@@ -1,15 +1,17 @@
 // src/hooks/useAssets.ts
-import { useState, useEffect, useCallback } from 'react';
-import { assetService, type Asset } from '../services/assetService';
+import { useState, useCallback, useEffect } from 'react';
+import { assetService, type Asset, type AssetFilters } from '../services/assetService';
+
+// src/hooks/useAssets.ts
 
 export function useAssets() {
     const [assets, setAssets] = useState<Asset[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const [isLoading, setIsLoading] = useState(true); // Start as true
 
-    const fetchAssets = useCallback(async () => {
+    const refresh = useCallback(async (filters?: AssetFilters) => {
         setIsLoading(true);
         try {
-            const data = await assetService.getAll();
+            const data = await assetService.getAll(filters);
             setAssets(data);
         } catch (error) {
             console.error("Failed to fetch assets", error);
@@ -18,17 +20,11 @@ export function useAssets() {
         }
     }, []);
 
+    // Add this Effect to ensure that components using this hook 
+    // (like the Details Drawer) actually get data on mount.
     useEffect(() => {
-        fetchAssets();
-    }, [fetchAssets]);
+        refresh();
+    }, [refresh]);
 
-    return {
-        assets,
-        isLoading,
-        refresh: fetchAssets,
-        create: assetService.create,
-        update: assetService.update,
-        delete: assetService.softDelete,
-        getById: assetService.getById
-    };
+    return { assets, isLoading, refresh, create: assetService.create, update: assetService.update, delete: assetService.softDelete, getById: assetService.getById };
 }
