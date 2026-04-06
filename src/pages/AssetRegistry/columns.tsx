@@ -57,11 +57,10 @@ export const columns = (
             id: 'actions',
             header: () => <div className="text-right">Actions</div>,
             cell: ({ row }) => (
-                <div className="flex items-center justify-end gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                <div className="flex items-center justify-end gap-2 transition-opacity hover-reveal">
                     <button
                         onClick={() => setSearchParams({ history: row.original.id })}
-                        className="p-2 text-gray-400 hover:text-indigo-600 rounded-lg transition-colors"
-                        title="History"
+                        className="p-2 text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-lg transition-colors"
                     >
                         <History className="w-4 h-4" />
                     </button>

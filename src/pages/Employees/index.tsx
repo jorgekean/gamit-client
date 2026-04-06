@@ -144,7 +144,7 @@ export function Employees() {
                 id: 'actions',
                 header: () => <div className="text-right">Actions</div>,
                 cell: ({ row }) => (
-                    <div className="flex items-center justify-end gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                    <div className="flex items-center justify-end gap-2 transition-opacity hover-reveal">
 
                         {/* VIEW ASSIGNED ASSETS BUTTON */}
                         <button

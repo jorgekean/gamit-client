@@ -127,7 +127,7 @@ export function Departments() {
                 id: 'actions',
                 header: () => <div className="text-right">Actions</div>,
                 cell: ({ row }) => (
-                    <div className="flex items-center justify-end gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                    <div className="flex items-center justify-end gap-2 transition-opacity hover-reveal">
                         <button
                             onClick={() => setSearchParams({ action: 'edit', id: row.original.id })}
                             className="p-2 text-gray-400 hover:text-primary-600 rounded-lg transition-colors"
