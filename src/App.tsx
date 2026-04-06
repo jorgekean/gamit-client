@@ -14,6 +14,7 @@ import { AssetRegistry } from './pages/AssetRegistry';
 import { Departments } from './pages/Departments';
 import { Employees } from './pages/Employees';
 import { AssetCategories } from './pages/AssetCategories';
+import { AssetDetails } from './pages/AssetRegistry/AssetDetails';
 
 function App() {
   return (
@@ -28,6 +29,7 @@ function App() {
             <Route path="/" element={<AppLayout />}>
               <Route index element={<Dashboard />} />
               <Route path="assets" element={<AssetRegistry />} />
+              <Route path="/assets/:id" element={<AssetDetails />} />
               <Route path="departments" element={<Departments />} />
               <Route path="employees" element={<Employees />} />
               <Route path="assetcategories" element={<AssetCategories />} />

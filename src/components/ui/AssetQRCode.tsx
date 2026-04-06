@@ -10,7 +10,7 @@ interface AssetQRCodeProps {
 export function AssetQRCode({ propertyNo, name, assetId }: AssetQRCodeProps) {
     // We encode a URL that points directly to this asset in the app.
     // When they scan it with a phone, it will open the app to this exact item.    
-    const scanUrl = `${window.location.origin}/assets?view=${assetId}`;
+    const scanUrl = `${window.location.origin}/assets/${assetId}`;
 
     return (
         <div className="flex flex-col items-center p-6 bg-white border-2 border-gray-200 rounded-xl shadow-sm max-w-xs mx-auto">

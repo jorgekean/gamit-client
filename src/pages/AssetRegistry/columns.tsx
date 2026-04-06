@@ -2,6 +2,7 @@
 import { type ColumnDef } from '@tanstack/react-table';
 import { Edit2, Trash2, Eye, History, QrCode } from 'lucide-react';
 import { type Asset } from '../../services/assetService';
+import { Link } from 'react-router-dom';
 
 // We export a FUNCTION here, not just a const array
 export const columns = (
@@ -64,13 +65,12 @@ export const columns = (
                     >
                         <History className="w-4 h-4" />
                     </button>
-                    <button
-                        onClick={() => setSearchParams({ view: row.original.id })}
-                        className="p-2 text-gray-400 hover:text-blue-600 rounded-lg transition-colors"
-                        title="Details"
+                    <Link to={`/assets/${row.original.id}`}
+                        className="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg transition-colors"
+                        title="View Details"
                     >
                         <Eye className="w-4 h-4" />
-                    </button>
+                    </Link>
                     <button
                         onClick={() => setSearchParams({ qr: row.original.id })}
                         className="p-2 text-gray-400 hover:text-primary-600 rounded-lg transition-colors"
