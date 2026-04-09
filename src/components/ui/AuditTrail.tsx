@@ -1,5 +1,5 @@
 // src/components/ui/AssetAuditTrail.tsx
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { Clock, ChevronRight, Loader2 } from 'lucide-react';
 import { useAssetHistory } from '../../hooks/useAssetHistory';
 
@@ -37,12 +37,12 @@ export function AssetAuditTrail({ assetId }: AssetAuditTrailProps) {
                         <div key={log.id} className="relative">
                             {/* Timeline Dot */}
                             <div className={`absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full ring-4 ring-[var(--bg-surface)] ${log.action === 'CREATED' ? 'bg-primary-500' :
-                                    log.action === 'TRANSFERRED' ? 'bg-blue-500' :
-                                        log.action === 'UPDATED' ? 'bg-gray-400' : 'bg-amber-500'
+                                log.action === 'TRANSFERRED' ? 'bg-blue-500' :
+                                    log.action === 'UPDATED' ? 'bg-gray-400' : 'bg-amber-500'
                                 }`} />
 
                             <div>
-                                {/* Header & Timestamp */}
+                                {/* Header & Date */}
                                 <div className="flex items-center justify-between">
                                     <p className="text-sm font-semibold text-gray-900 dark:text-white">
                                         {log.action === 'CREATED' ? 'Asset Registered' :
@@ -50,7 +50,7 @@ export function AssetAuditTrail({ assetId }: AssetAuditTrailProps) {
                                                 log.action === 'UPDATED' ? 'Asset Details Updated' : 'Condition Updated'}
                                     </p>
                                     <p className="text-[10px] text-gray-400 font-mono uppercase">
-                                        {new Date(log.timestamp).toLocaleString('en-PH', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                                        {new Date(log.date).toLocaleString('en-PH', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}
                                     </p>
                                 </div>
 

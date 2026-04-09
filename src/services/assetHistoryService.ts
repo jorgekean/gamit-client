@@ -1,5 +1,6 @@
 // src/services/assetHistoryService.ts
 import { db } from '../lib/db';
+import type { SyncState } from './assetService';
 
 export type HistoryAction = 'CREATED' | 'TRANSFERRED' | 'STATUS_CHANGED' | 'UPDATED';
 
@@ -16,7 +17,9 @@ export interface AssetHistory {
     action: HistoryAction;
     description: string;
     changes?: AssetHistoryChange[];
-    timestamp: string;
+    date: string;
+
+    syncState: string; // 'synced' | 'pending_create' | 'pending_update' | 'pending_delete'
 }
 
 export const assetHistoryService = {
@@ -25,6 +28,6 @@ export const assetHistoryService = {
             .where('assetId')
             .equals(assetId)
             .reverse()
-            .sortBy('timestamp');
+            .sortBy('date');
     }
 };

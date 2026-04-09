@@ -1,18 +1,17 @@
 // src/pages/AssetCategories/AssetCategories.tsx
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Plus, Edit2, Trash2, Tags, Search } from 'lucide-react';
 import type { ColumnDef, PaginationState } from '@tanstack/react-table';
 import { toast } from 'sonner';
 
-import { useAssetCategories } from '../../hooks/useAssetCategories';
 import { useConfirm } from '../../contexts/ConfirmContext';
 import { Drawer } from '../../components/ui/Drawer';
 import { DataTable } from '../../components/ui/DataTable';
+import { api } from '../../lib/api';
 import type { AssetCategory } from '../../services/assetCategoryService';
 
 export function AssetCategories() {
-    const { categories, isLoading, refresh, create, update, delete: softDelete, getById } = useAssetCategories();
     const confirm = useConfirm();
     const [searchParams, setSearchParams] = useSearchParams();
 
@@ -20,7 +19,11 @@ export function AssetCategories() {
     const targetId = searchParams.get('id');
 
     const [searchTerm, setSearchTerm] = useState('');
+    const [categories, setCategories] = useState<AssetCategory[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+    const [totalRecords, setTotalRecords] = useState(0);
+    const [pageCount, setPageCount] = useState(1);
     const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: 10 });
 
     const [formData, setFormData] = useState({
@@ -29,38 +32,64 @@ export function AssetCategories() {
         usefulLifeYears: 5, // Default to 5 years
     });
 
-    // Derived state for search & pagination
-    const filteredData = useMemo(() => {
-        if (!searchTerm) return categories;
-        const lower = searchTerm.toLowerCase();
-        return categories.filter(c =>
-            c.name.toLowerCase().includes(lower) ||
-            c.code.toLowerCase().includes(lower)
-        );
-    }, [categories, searchTerm]);
+    const fetchCategories = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            const response = await api.get('/asset-categories', {
+                params: {
+                    page: pagination.pageIndex + 1,
+                    limit: pagination.pageSize,
+                    searchTerm: searchTerm || undefined,
+                },
+            });
 
-    const paginatedData = useMemo(() => {
-        const start = pagination.pageIndex * pagination.pageSize;
-        return filteredData.slice(start, start + pagination.pageSize);
-    }, [filteredData, pagination]);
+            const payload = response.data;
+            const rows: AssetCategory[] = payload?.data ?? [];
+            const meta = payload?.meta ?? {};
+
+            setCategories(rows);
+            const total = typeof meta.total === 'number' ? meta.total : rows.length;
+            setTotalRecords(total);
+            setPageCount(typeof meta.totalPages === 'number' ? Math.max(1, meta.totalPages) : Math.max(1, Math.ceil(total / pagination.pageSize)));
+        } catch (error) {
+            setCategories([]);
+            setTotalRecords(0);
+            setPageCount(1);
+            toast.error('Failed to load categories from server.');
+        } finally {
+            setIsLoading(false);
+        }
+    }, [pagination.pageIndex, pagination.pageSize, searchTerm]);
 
     useEffect(() => {
         setPagination(prev => ({ ...prev, pageIndex: 0 }));
     }, [searchTerm]);
 
     useEffect(() => {
+        fetchCategories();
+    }, [fetchCategories]);
+
+    useEffect(() => {
         if (action === 'edit' && targetId) {
-            getById(targetId).then(cat => {
-                if (cat) setFormData({
-                    code: cat.code,
-                    name: cat.name,
-                    usefulLifeYears: cat.usefulLifeYears,
+            api.get(`/asset-categories/${targetId}`)
+                .then(res => {
+                    const cat: AssetCategory | undefined = res.data?.data;
+                    if (cat) {
+                        setFormData({
+                            code: cat.code,
+                            name: cat.name,
+                            usefulLifeYears: cat.usefulLifeYears,
+                        });
+                    }
+                })
+                .catch(() => {
+                    toast.error('Failed to load category details.');
+                    closeDrawer();
                 });
-            });
         } else {
             setFormData({ code: '', name: '', usefulLifeYears: 5 });
         }
-    }, [action, targetId, getById]);
+    }, [action, targetId]);
 
     const closeDrawer = () => setSearchParams({});
 
@@ -70,14 +99,20 @@ export function AssetCategories() {
         const toastId = toast.loading('Saving category...');
 
         try {
+            const payload = {
+                code: formData.code.trim().toUpperCase(),
+                name: formData.name.trim(),
+                usefulLifeYears: formData.usefulLifeYears,
+            };
+
             if (action === 'new') {
-                await create(formData);
+                await api.post('/asset-categories', payload);
                 toast.success(`Category ${formData.code} added!`, { id: toastId });
             } else if (action === 'edit' && targetId) {
-                await update(targetId, formData);
+                await api.put(`/asset-categories/${targetId}`, payload);
                 toast.success(`Category updated!`, { id: toastId });
             }
-            await refresh();
+            await fetchCategories();
             closeDrawer();
         } catch (error) {
             toast.error('Failed to save category.', { id: toastId });
@@ -96,8 +131,8 @@ export function AssetCategories() {
 
         if (isConfirmed) {
             try {
-                await softDelete(id);
-                await refresh();
+                await api.delete(`/asset-categories/${id}`);
+                await fetchCategories();
                 toast.success('Category removed.');
             } catch (error) {
                 toast.error('Failed to delete category.');
@@ -192,8 +227,9 @@ export function AssetCategories() {
             ) : (
                 <DataTable
                     columns={columns}
-                    data={paginatedData}
-                    pageCount={Math.ceil(filteredData.length / pagination.pageSize)}
+                    data={categories}
+                    pageCount={pageCount}
+                    totalRecords={totalRecords}
                     pagination={pagination}
                     setPagination={setPagination}
                     isLoading={isLoading}

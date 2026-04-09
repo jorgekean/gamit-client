@@ -1,9 +1,6 @@
 // src/services/departmentService.ts
-import Dexie, { type Table } from 'dexie';
-import { db } from '../lib/db';
-import { v4 as uuidv4 } from 'uuid';
+import { api } from '../lib/api';
 
-// 1. Our standard TypeScript interface
 export interface Department {
     id: string;
     code: string;
@@ -13,54 +10,47 @@ export interface Department {
     deleted_at: string | null;
 }
 
+function extractRows(payload: any): Department[] {
+    if (Array.isArray(payload)) return payload;
+    if (Array.isArray(payload?.data)) return payload.data;
+    return [];
+}
 
-// 4. The Service Object (The API remains exactly the same!)
+function extractOne(payload: any): Department | undefined {
+    if (!payload) return undefined;
+    if (payload.data && !Array.isArray(payload.data)) return payload.data as Department;
+    if (payload.id && payload.code) return payload as Department;
+    return undefined;
+}
+
 export const departmentService = {
     async getAll(): Promise<Department[]> {
-        // Dexie makes filtering out soft-deletes and sorting incredibly easy
-        return await db.departments
-            .filter(dept => dept.deleted_at === null)
-            .sortBy('name');
+        const response = await api.get('/departments', {
+            params: { page: 1, limit: 1000 },
+        });
+        return extractRows(response.data);
     },
 
     async getById(id: string): Promise<Department | undefined> {
-        const dept = await db.departments.get(id);
-        if (dept && dept.deleted_at) return undefined;
-        return dept;
+        const response = await api.get(`/departments/${id}`);
+        return extractOne(response.data);
     },
 
     async create(data: Omit<Department, 'id' | 'created_at' | 'updated_at' | 'deleted_at'>): Promise<Department> {
-        const newDept: Department = {
-            ...data,
-            id: uuidv4(),
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-            deleted_at: null,
-        };
-
-        await db.departments.add(newDept);
-        return newDept;
+        const response = await api.post('/departments', data);
+        const created = extractOne(response.data);
+        if (!created) throw new Error('Failed to parse created department from server response');
+        return created;
     },
 
     async update(id: string, data: Partial<Omit<Department, 'id' | 'created_at' | 'updated_at' | 'deleted_at'>>): Promise<Department> {
-        // Dexie's update method only touches the fields you pass it
-        const updatedData = {
-            ...data,
-            updated_at: new Date().toISOString(),
-        };
-
-        await db.departments.update(id, updatedData);
-
-        // Fetch and return the fresh record
-        const updatedRecord = await db.departments.get(id);
-        if (!updatedRecord) throw new Error('Department not found after update');
-        return updatedRecord;
+        const response = await api.put(`/departments/${id}`, data);
+        const updated = extractOne(response.data);
+        if (!updated) throw new Error('Failed to parse updated department from server response');
+        return updated;
     },
 
     async softDelete(id: string): Promise<void> {
-        // A soft delete is just an update to the deleted_at timestamp
-        await db.departments.update(id, {
-            deleted_at: new Date().toISOString()
-        });
+        await api.delete(`/departments/${id}`);
     }
 };

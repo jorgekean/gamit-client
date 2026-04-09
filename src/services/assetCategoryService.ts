@@ -1,56 +1,60 @@
 // src/services/assetCategoryService.ts
-import { v4 as uuidv4 } from 'uuid';
-import { db } from '../lib/db';
+import { api } from '../lib/api';
 
 export interface AssetCategory {
     id: string;
-    code: string;           // e.g., "IT-EQP"
-    name: string;           // e.g., "IT Equipment"
-    usefulLifeYears: number; // e.g., 5 (for depreciation)
+    code: string;
+    name: string;
+    usefulLifeYears: number;
     created_at: string;
     updated_at: string;
     deleted_at: string | null;
 }
 
+function extractRows(payload: any): AssetCategory[] {
+    if (Array.isArray(payload)) return payload;
+    if (Array.isArray(payload?.data)) return payload.data;
+    return [];
+}
+
+function extractOne(payload: any): AssetCategory | undefined {
+    if (!payload) return undefined;
+    if (payload.data && !Array.isArray(payload.data)) return payload.data as AssetCategory;
+    if (payload.id && payload.code) return payload as AssetCategory;
+    return undefined;
+}
+
 export const assetCategoryService = {
     async getAll(): Promise<AssetCategory[]> {
-        return await db.assetCategories
-            .filter(cat => cat.deleted_at === null)
-            .sortBy('name');
+        const response = await api.get('/asset-categories', {
+            params: {
+                page: 1,
+                limit: 1000,
+            },
+        });
+        return extractRows(response.data);
     },
 
     async getById(id: string): Promise<AssetCategory | undefined> {
-        const cat = await db.assetCategories.get(id);
-        if (cat && cat.deleted_at) return undefined;
-        return cat;
+        const response = await api.get(`/asset-categories/${id}`);
+        return extractOne(response.data);
     },
 
     async create(data: Omit<AssetCategory, 'id' | 'created_at' | 'updated_at' | 'deleted_at'>): Promise<AssetCategory> {
-        const newCat: AssetCategory = {
-            ...data,
-            id: uuidv4(),
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-            deleted_at: null,
-        };
-        await db.assetCategories.add(newCat);
-        return newCat;
+        const response = await api.post('/asset-categories', data);
+        const created = extractOne(response.data);
+        if (!created) throw new Error('Failed to parse created category from server response');
+        return created;
     },
 
     async update(id: string, data: Partial<Omit<AssetCategory, 'id' | 'created_at' | 'updated_at' | 'deleted_at'>>): Promise<AssetCategory> {
-        const updatedData = {
-            ...data,
-            updated_at: new Date().toISOString(),
-        };
-        await db.assetCategories.update(id, updatedData);
-        const updatedRecord = await db.assetCategories.get(id);
-        if (!updatedRecord) throw new Error('Category not found after update');
-        return updatedRecord;
+        const response = await api.put(`/asset-categories/${id}`, data);
+        const updated = extractOne(response.data);
+        if (!updated) throw new Error('Failed to parse updated category from server response');
+        return updated;
     },
 
     async softDelete(id: string): Promise<void> {
-        await db.assetCategories.update(id, {
-            deleted_at: new Date().toISOString()
-        });
+        await api.delete(`/asset-categories/${id}`);
     }
 };

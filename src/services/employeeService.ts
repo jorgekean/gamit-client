@@ -1,58 +1,59 @@
 // src/services/employeeService.ts
-import { v4 as uuidv4 } from 'uuid';
-import { db } from '../lib/db';
+import { api } from '../lib/api';
 
 export interface Employee {
     id: string;
-    employeeNo: string; // e.g., EMP-2024-001
+    employeeNo: string;
     firstName: string;
     lastName: string;
-    position: string;   // e.g., "Administrative Officer"
-    departmentId: string; // The foreign key linking to Departments
+    position: string;
+    departmentId: string;
     created_at: string;
     updated_at: string;
     deleted_at: string | null;
 }
 
+function extractRows(payload: any): Employee[] {
+    if (Array.isArray(payload)) return payload;
+    if (Array.isArray(payload?.data)) return payload.data;
+    return [];
+}
+
+function extractOne(payload: any): Employee | undefined {
+    if (!payload) return undefined;
+    if (payload.data && !Array.isArray(payload.data)) return payload.data as Employee;
+    if (payload.id && payload.employeeNo) return payload as Employee;
+    return undefined;
+}
+
 export const employeeService = {
     async getAll(): Promise<Employee[]> {
-        return await db.employees
-            .filter(emp => emp.deleted_at === null)
-            .sortBy('lastName'); // Sort alphabetically by last name
+        const response = await api.get('/employees', {
+            params: { page: 1, limit: 1000 },
+        });
+        return extractRows(response.data);
     },
 
     async getById(id: string): Promise<Employee | undefined> {
-        const emp = await db.employees.get(id);
-        if (emp && emp.deleted_at) return undefined;
-        return emp;
+        const response = await api.get(`/employees/${id}`);
+        return extractOne(response.data);
     },
 
     async create(data: Omit<Employee, 'id' | 'created_at' | 'updated_at' | 'deleted_at'>): Promise<Employee> {
-        const newEmp: Employee = {
-            ...data,
-            id: uuidv4(),
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-            deleted_at: null,
-        };
-        await db.employees.add(newEmp);
-        return newEmp;
+        const response = await api.post('/employees', data);
+        const created = extractOne(response.data);
+        if (!created) throw new Error('Failed to parse created employee from server response');
+        return created;
     },
 
     async update(id: string, data: Partial<Omit<Employee, 'id' | 'created_at' | 'updated_at' | 'deleted_at'>>): Promise<Employee> {
-        const updatedData = {
-            ...data,
-            updated_at: new Date().toISOString(),
-        };
-        await db.employees.update(id, updatedData);
-        const updatedRecord = await db.employees.get(id);
-        if (!updatedRecord) throw new Error('Employee not found after update');
-        return updatedRecord;
+        const response = await api.put(`/employees/${id}`, data);
+        const updated = extractOne(response.data);
+        if (!updated) throw new Error('Failed to parse updated employee from server response');
+        return updated;
     },
 
     async softDelete(id: string): Promise<void> {
-        await db.employees.update(id, {
-            deleted_at: new Date().toISOString()
-        });
+        await api.delete(`/employees/${id}`);
     }
 };

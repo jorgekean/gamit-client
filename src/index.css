@@ -59,3 +59,36 @@ body {
     @apply md:opacity-0 md:group-hover:opacity-100;
   }
 }
+
+@layer base {
+
+  /* --- Chrome, Edge, and Safari --- */
+  ::-webkit-scrollbar {
+    width: 6px;
+    /* Vertical scrollbar width */
+    height: 6px;
+    /* Horizontal scrollbar height (for your table) */
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-gray-300 rounded-full dark:bg-white/10;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-400 dark:bg-white/20;
+  }
+
+  /* --- Firefox --- */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: theme('colors.gray.300') transparent;
+  }
+
+  .dark * {
+    scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+  }
+}

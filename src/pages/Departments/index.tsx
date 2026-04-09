@@ -1,72 +1,86 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Plus, Edit2, Trash2, Building2, Search } from 'lucide-react'; // <-- Added Search icon
+import { Plus, Edit2, Trash2, Building2, Search } from 'lucide-react';
 import type { ColumnDef, PaginationState } from '@tanstack/react-table';
 import { toast } from 'sonner';
 
-import { useDepartments } from '../../hooks/useDepartments';
 import { useConfirm } from '../../contexts/ConfirmContext';
 import { Drawer } from '../../components/ui/Drawer';
 import { DataTable } from '../../components/ui/DataTable';
+import { api } from '../../lib/api';
 import type { Department } from '../../services/departmentService';
 
 export function Departments() {
-    const { departments, isLoading, refresh, create, update, delete: softDelete, getById } = useDepartments();
     const confirm = useConfirm();
     const [searchParams, setSearchParams] = useSearchParams();
 
-    // URL State
     const action = searchParams.get('action');
     const targetId = searchParams.get('id');
 
-    // Form & UI State
     const [formData, setFormData] = useState({ code: '', name: '' });
     const [isSaving, setIsSaving] = useState(false);
-    const [searchTerm, setSearchTerm] = useState(''); // <-- Search State
+    const [searchTerm, setSearchTerm] = useState('');
+    const [departments, setDepartments] = useState<Department[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
+    const [totalRecords, setTotalRecords] = useState(0);
+    const [pageCount, setPageCount] = useState(1);
 
-    // Pagination State
     const [pagination, setPagination] = useState<PaginationState>({
         pageIndex: 0,
         pageSize: 10,
     });
 
-    // --- DATA PIPELINE (Simulating a Backend) ---
+    const fetchDepartments = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            const response = await api.get('/departments', {
+                params: {
+                    page: pagination.pageIndex + 1,
+                    limit: pagination.pageSize,
+                    searchTerm: searchTerm || undefined,
+                },
+            });
+            const payload = response.data;
+            const rows: Department[] = Array.isArray(payload?.data) ? payload.data : (Array.isArray(payload) ? payload : []);
+            const meta = payload?.meta ?? {};
+            setDepartments(rows);
+            const total = typeof meta.total === 'number' ? meta.total : rows.length;
+            setTotalRecords(total);
+            setPageCount(typeof meta.totalPages === 'number' ? Math.max(1, meta.totalPages) : Math.max(1, Math.ceil(total / pagination.pageSize)));
+        } catch (error) {
+            setDepartments([]);
+            setTotalRecords(0);
+            setPageCount(1);
+            toast.error('Failed to load departments from server.');
+        } finally {
+            setIsLoading(false);
+        }
+    }, [pagination.pageIndex, pagination.pageSize, searchTerm]);
 
-    // 1. Filter the data based on the search term
-    const filteredData = useMemo(() => {
-        if (!searchTerm) return departments;
-        const lower = searchTerm.toLowerCase();
-        return departments.filter(d =>
-            d.name.toLowerCase().includes(lower) ||
-            d.code.toLowerCase().includes(lower)
-        );
-    }, [departments, searchTerm]);
-
-    // 2. Slice the data for the current page
-    const paginatedData = useMemo(() => {
-        const start = pagination.pageIndex * pagination.pageSize;
-        return filteredData.slice(start, start + pagination.pageSize);
-    }, [filteredData, pagination]);
-
-    // Reset to page 1 when the user types in the search box
     useEffect(() => {
         setPagination(prev => ({ ...prev, pageIndex: 0 }));
     }, [searchTerm]);
 
-    // --------------------------------------------
+    useEffect(() => {
+        fetchDepartments();
+    }, [fetchDepartments]);
 
-    // Populate form if editing
     useEffect(() => {
         if (action === 'edit' && targetId) {
-            getById(targetId).then(dept => {
-                if (dept) setFormData({ code: dept.code, name: dept.name });
-            });
+            api.get(`/departments/${targetId}`)
+                .then(res => {
+                    const dept: Department | undefined = res.data?.data ?? (res.data?.id ? res.data : undefined);
+                    if (dept) setFormData({ code: dept.code, name: dept.name });
+                })
+                .catch(() => {
+                    toast.error('Failed to load department details.');
+                    closeDrawer();
+                });
         } else {
             setFormData({ code: '', name: '' });
         }
-    }, [action, targetId, getById]);
+    }, [action, targetId]);
 
-    // Actions
     const closeDrawer = () => setSearchParams({});
 
     const handleSave = async (e: React.FormEvent) => {
@@ -75,14 +89,18 @@ export function Departments() {
         const toastId = toast.loading('Saving department...');
 
         try {
+            const payload = {
+                code: formData.code.trim().toUpperCase(),
+                name: formData.name.trim(),
+            };
             if (action === 'new') {
-                await create(formData);
+                await api.post('/departments', payload);
                 toast.success(`Department ${formData.code} created!`, { id: toastId });
             } else if (action === 'edit' && targetId) {
-                await update(targetId, formData);
+                await api.put(`/departments/${targetId}`, payload);
                 toast.success(`Department updated!`, { id: toastId });
             }
-            await refresh();
+            await fetchDepartments();
             closeDrawer();
         } catch (error) {
             toast.error('Failed to save department.', { id: toastId });
@@ -101,16 +119,15 @@ export function Departments() {
 
         if (isConfirmed) {
             try {
-                await softDelete(id);
-                await refresh();
-                toast.success('Department moved to trash.');
+                await api.delete(`/departments/${id}`);
+                await fetchDepartments();
+                toast.success('Department deleted.');
             } catch (error) {
                 toast.error('Failed to delete department.');
             }
         }
     };
 
-    // Define Columns
     const columns = useMemo<ColumnDef<Department>[]>(
         () => [
             {
@@ -193,8 +210,9 @@ export function Departments() {
             ) : (
                 <DataTable
                     columns={columns}
-                    data={paginatedData} // <-- Pass the sliced/filtered data
-                    pageCount={Math.ceil(filteredData.length / pagination.pageSize)} // <-- Calculate pages based on filtered results
+                    data={departments}
+                    pageCount={pageCount}
+                    totalRecords={totalRecords}
                     pagination={pagination}
                     setPagination={setPagination}
                     isLoading={isLoading}

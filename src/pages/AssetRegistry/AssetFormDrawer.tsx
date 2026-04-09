@@ -37,7 +37,30 @@ export function AssetFormDrawer() {
     useEffect(() => {
         if (action === 'edit' && targetId) {
             getById(targetId).then(asset => {
-                if (asset) setFormData({ ...asset, departmentId: asset.departmentId || '', employeeId: asset.employeeId || '' });
+                if (asset) {
+                    const resolveId = (value: unknown) => {
+                        if (!value) return '';
+                        if (typeof value === 'string') return value;
+                        if (typeof value === 'object' && value !== null && typeof (value as any).id === 'string') {
+                            return (value as any).id;
+                        }
+                        return '';
+                    };
+
+                    setFormData({
+                        propertyNo: asset.propertyNo ?? '',
+                        name: asset.name ?? '',
+                        categoryId: resolveId((asset as any).categoryId),
+                        cost: asset.cost ?? 0,
+                        dateAcquired: asset.dateAcquired ?? new Date().toISOString().split('T')[0],
+                        brand: asset.brand ?? '',
+                        model: asset.model ?? '',
+                        serialNo: asset.serialNo ?? '',
+                        status: asset.status,
+                        departmentId: resolveId((asset as any).departmentId),
+                        employeeId: resolveId((asset as any).employeeId),
+                    });
+                }
                 setStep(0);
             });
         } else if (action === 'new') {
@@ -85,7 +108,15 @@ export function AssetFormDrawer() {
         const toastId = toast.loading('Saving asset...');
 
         const payload = {
-            ...formData,
+            propertyNo: formData.propertyNo,
+            name: formData.name,
+            categoryId: formData.categoryId,
+            cost: formData.cost,
+            dateAcquired: formData.dateAcquired,
+            brand: formData.brand,
+            model: formData.model,
+            serialNo: formData.serialNo,
+            status: formData.status,
             departmentId: formData.departmentId === '' ? null : formData.departmentId,
             employeeId: formData.employeeId === '' ? null : formData.employeeId,
         };

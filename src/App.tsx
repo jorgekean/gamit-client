@@ -19,8 +19,12 @@ import { Departments } from './pages/Departments';
 import { Employees } from './pages/Employees';
 import { AssetCategories } from './pages/AssetCategories';
 import { AssetDetails } from './pages/AssetRegistry/AssetDetails';
+import { useSyncManager } from './hooks/useSyncManager';
 
 function App() {
+  useSyncManager(); // Custom hook to handle online/offline sync logic
+
+
   return (
     <ThemeProvider defaultTheme="system">
       {/* ✨ 3. Wrap everything that needs authentication state in AuthProvider */}

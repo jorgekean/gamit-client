@@ -24,13 +24,13 @@ export class GamitDatabase extends Dexie {
     constructor() {
         super('GamitDB');
 
-        // ✨ 3. Bump version to 6 to safely apply the new table
-        this.version(6).stores({
+        // Define tables and indexes
+        this.version(10).stores({
             departments: 'id, &code, name, deleted_at',
             employees: 'id, &employeeNo, firstName, lastName, departmentId, deleted_at',
             assetCategories: 'id, &code, name, deleted_at',
-            assets: 'id, &propertyNo, categoryId, departmentId, employeeId, status, deleted_at',
-            assetHistory: 'id, assetId, action, timestamp',
+            assets: 'id, &propertyNo, categoryId, departmentId, employeeId, status, deleted_at, syncState',
+            assetHistory: 'id, assetId, action, date, syncState',
             apiCache: 'endpoint' // ✨ 4. Index only by endpoint for lightning-fast lookups
         });
     }

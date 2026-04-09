@@ -4,7 +4,6 @@ import { useSearchParams } from 'react-router-dom';
 import {
     Plus, Search, QrCode, X, Eye, History, Filter, Package
 } from 'lucide-react';
-import type { PaginationState } from '@tanstack/react-table';
 import { toast } from 'sonner';
 
 // Data Orchestration Hooks
@@ -20,103 +19,104 @@ import { DataTable } from '../../components/ui/DataTable';
 import { AssetQRCode } from '../../components/ui/AssetQRCode';
 import { AssetAuditTrail } from '../../components/ui/AuditTrail';
 
-// Feature-Specific Sub-components (Located in the same folder)
+// Feature-Specific Sub-components
 import { AssetFilterDrawer } from './AssetFilterDrawer';
-import { AssetDetailsDrawer } from './AssetDetailsDrawer';
 import { AssetFormDrawer } from './AssetFormDrawer';
 import { columns } from './columns';
 
 /**
  * AssetRegistry Component
- * Acts as the central hub for asset management, supporting advanced filtering,
- * server-side (service-layer) searching, and lifecycle management via URL params.
+ * Central hub for asset management, supporting advanced filtering,
+ * server-side pagination, and offline-first syncing.
  */
 export function AssetRegistry() {
-    // --- 1. Data & Context Hooks ---
-    const { assets, isLoading: loadingAssets, refresh, delete: softDelete } = useAssets();
-    const { categories } = useAssetCategories();
-    const { departments } = useDepartments();
-    const { employees } = useEmployees();
-    const confirm = useConfirm();
+    // --- 1. Local UI State ---
+    const [searchTerm, setSearchTerm] = useState('');
+    const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 50 }); // 50 items per page
 
     // --- 2. URL State Management ---
-    // Using searchParams as a single source of truth for UI state (Drawers & Filters)
     const [searchParams, setSearchParams] = useSearchParams();
-
-    // Drawer & Modal IDs
     const qrId = searchParams.get('qr');
     const historyId = searchParams.get('history');
 
-    // Filter Parameters extracted from URL
+    // Filters extracted from URL
     const deptFilter = searchParams.get('dept');
     const empFilter = searchParams.get('emp');
     const statusFilter = searchParams.get('status');
     const catFilter = searchParams.get('cat');
     const showFilters = searchParams.get('filters') === 'true';
 
-    // --- 3. Local UI State ---
-    const [searchTerm, setSearchTerm] = useState('');
-    const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: 10 });
+    // --- 3. Data & Context Hooks ---
+    // ✨ Destructure setQueryParams, meta, and delete from our upgraded hook
+    const {
+        assets,
+        meta,
+        isLoading,
+        setQueryParams,
+        delete: softDelete
+    } = useAssets({
+        page: 1,
+        limit: 50
+    });
+
+    const { categories } = useAssetCategories();
+    const { departments } = useDepartments();
+    const { employees } = useEmployees();
+    const confirm = useConfirm();
+
+    // --- 4. State Synchronization ---
 
     /**
-     * Effect: Data Synchronization
-     * Triggers a service-layer fetch whenever search criteria or filters change.
-     * This ensures the UI remains in sync with the filtered dataset.
+     * Effect: Sync UI State to the Service Layer
+     * Whenever a user types a search, changes a filter, or clicks "Next Page",
+     * we update the hook's queryParams, which automatically triggers a background fetch.
      */
     useEffect(() => {
-        refresh({
-            searchTerm,
-            deptId: deptFilter,
+        setQueryParams({
+            page: pagination.pageIndex + 1, // API is 1-indexed, Table is 0-indexed
+            limit: pagination.pageSize,
+            search: searchTerm || undefined,
+            departmentId: deptFilter,
             employeeId: empFilter,
             status: statusFilter,
             categoryId: catFilter
         });
-    }, [refresh, searchTerm, deptFilter, empFilter, statusFilter, catFilter]);
+    }, [pagination, searchTerm, deptFilter, empFilter, statusFilter, catFilter, setQueryParams]);
 
     /**
      * Effect: Pagination Reset
-     * Ensures users return to page 1 whenever they perform a new search.
+     * Ensures users return to page 1 whenever they perform a NEW search or apply a filter.
      */
     useEffect(() => {
         setPagination(prev => ({ ...prev, pageIndex: 0 }));
-    }, [searchTerm, deptFilter, empFilter]);
+    }, [searchTerm, deptFilter, empFilter, statusFilter, catFilter]);
 
-    // --- 4. Action Handlers ---
+    // --- 5. Action Handlers ---
 
-    /**
-     * Handles the soft-deletion of an asset with a confirmation prompt.
-     */
     const handleDelete = useCallback(async (id: string, name: string) => {
         const isConfirmed = await confirm({
-            title: 'Delete Asset',
-            description: `Are you sure you want to delete ${name}? This action can be audited in the history log.`,
-            confirmText: 'Delete',
+            title: 'Archive Asset',
+            description: `Are you sure you want to archive ${name}? This action can be reversed by an admin.`,
+            confirmText: 'Archive',
             intent: 'danger',
         });
 
         if (isConfirmed) {
             try {
-                await softDelete(id);
-                await refresh(); // Refresh list to reflect deletion
-                toast.success('Asset removed from registry.');
+                await softDelete(id); // The hook handles the toast and optimistic UI update!
             } catch (error) {
-                toast.error('Failed to delete asset.');
+                console.error('Delete failed', error);
             }
         }
-    }, [confirm, softDelete, refresh]);
+    }, [confirm, softDelete]);
 
-    /**
-     * Clears all active filters by removing them from the URL.
-     */
     const clearFilters = () => {
         const newParams = new URLSearchParams(searchParams);
         ['dept', 'emp', 'status', 'cat'].forEach(param => newParams.delete(param));
         setSearchParams(newParams);
     };
 
-    /**
-     * Helper functions to resolve display names for the Filter Banner
-     */
+    // Helper functions for Filter Banner
     const getCategoryName = (id: string) => categories.find(c => c.id === id)?.name || 'Unknown';
     const getDeptName = (id?: string | null) => departments.find(d => d.id === id)?.name || 'Unassigned';
     const getEmpName = (id?: string | null) => {
@@ -124,11 +124,6 @@ export function AssetRegistry() {
         return e ? `${e.firstName} ${e.lastName}` : 'Unassigned';
     };
 
-    /**
-     * Memoized Column Definitions
-     * We pass setSearchParams and handleDelete into the column factory 
-     * to allow action buttons within the table cells to function.
-     */
     const tableColumns = useMemo(
         () => columns(setSearchParams, handleDelete, categories),
         [setSearchParams, handleDelete, categories]
@@ -198,7 +193,7 @@ export function AssetRegistry() {
             </div>
 
             {/* Main Assets Data Table */}
-            {assets.length === 0 && !loadingAssets ? (
+            {assets.length === 0 && !isLoading ? (
                 <div className="bg-[var(--bg-surface)] border border-gray-200 dark:border-white/10 rounded-2xl shadow-sm p-12 text-center flex flex-col items-center">
                     <Package className="w-12 h-12 text-gray-300 mb-4" />
                     <p className="text-gray-500 font-medium">No assets found matching the criteria.</p>
@@ -208,22 +203,18 @@ export function AssetRegistry() {
                 <DataTable
                     columns={tableColumns}
                     data={assets}
-                    pageCount={1} // Future-proofing: Replace with API-calculated page count
+                    pageCount={meta?.totalPages || 1} // ✨ Passed from the hook!
+                    totalRecords={meta?.total || 0}   // ✨ Passed from the hook!
                     pagination={pagination}
                     setPagination={setPagination}
-                    isLoading={loadingAssets}
+                    isLoading={isLoading}
                 />
             )}
 
-            {/* --- FEATURE-SPECIFIC DRAWERS (Extracted Components) --- */}
+            {/* --- FEATURE-SPECIFIC DRAWERS --- */}
 
-            {/* Registration/Edit Wizard */}
             <AssetFormDrawer />
 
-            {/* Read-only Asset Details Passport */}
-            <AssetDetailsDrawer />
-
-            {/* Advanced Filter Selection Panel */}
             <AssetFilterDrawer
                 isOpen={showFilters}
                 onClose={() => {
@@ -233,7 +224,6 @@ export function AssetRegistry() {
                 }}
             />
 
-            {/* Standalone Asset Lifecycle History Drawer */}
             <Drawer isOpen={!!historyId} onClose={() => setSearchParams({})} title="Asset History Log">
                 {historyId && (
                     <div className="pb-6 animate-in fade-in duration-300">
@@ -248,7 +238,6 @@ export function AssetRegistry() {
                 )}
             </Drawer>
 
-            {/* QR Code Tag Preview Modal */}
             {qrId && (
                 <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm transition-opacity" onClick={() => setSearchParams({})} />
