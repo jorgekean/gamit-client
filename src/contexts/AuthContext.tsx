@@ -20,19 +20,18 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-    const [user, setUser] = useState<User | null>(null);
-    const [token, setToken] = useState<string | null>(null);
-
-    // On initial load, check if we have session data saved in localStorage
-    useEffect(() => {
-        const storedToken = localStorage.getItem('gamit_token');
+    // ✨ 1. Lazy Initialize User
+    const [user, setUser] = useState<User | null>(() => {
         const storedUser = localStorage.getItem('gamit_user');
+        return storedUser ? JSON.parse(storedUser) : null;
+    });
 
-        if (storedToken && storedUser) {
-            setToken(storedToken);
-            setUser(JSON.parse(storedUser));
-        }
-    }, []);
+    // ✨ 2. Lazy Initialize Token
+    const [token, setToken] = useState<string | null>(() => {
+        return localStorage.getItem('gamit_token');
+    });
+
+    // ✨ 3. You can now completely DELETE the useEffect that was here!
 
     const login = (userData: User, jwtToken: string) => {
         setUser(userData);

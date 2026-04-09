@@ -1,6 +1,6 @@
 // src/services/assetService.ts
 import { v4 as uuidv4 } from 'uuid';
-import { db } from './db';
+import { db } from '../lib/db';
 
 export type AssetStatus = 'Serviceable' | 'Unserviceable' | 'For Repair';
 

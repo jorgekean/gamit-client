@@ -1,5 +1,5 @@
 // src/services/assetHistoryService.ts
-import { db } from './db';
+import { db } from '../lib/db';
 
 export type HistoryAction = 'CREATED' | 'TRANSFERRED' | 'STATUS_CHANGED' | 'UPDATED';
 

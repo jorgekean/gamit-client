@@ -1,6 +1,6 @@
 // src/services/departmentService.ts
 import Dexie, { type Table } from 'dexie';
-import { db } from './db';
+import { db } from '../lib/db';
 import { v4 as uuidv4 } from 'uuid';
 
 // 1. Our standard TypeScript interface

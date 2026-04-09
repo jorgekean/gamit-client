@@ -1,6 +1,6 @@
 // src/services/assetCategoryService.ts
 import { v4 as uuidv4 } from 'uuid';
-import { db } from './db';
+import { db } from '../lib/db';
 
 export interface AssetCategory {
     id: string;
