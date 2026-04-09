@@ -1,6 +1,7 @@
 import React from 'react';
 import { Menu, Search, Bell, Moon, Sun } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
+import { UserProfileDropdown } from './UserProfileDropdown';
 
 interface TopHeaderProps {
     onOpenSidebar: () => void;
@@ -64,9 +65,7 @@ export function TopHeader({ onOpenSidebar }: TopHeaderProps) {
                     <span className="absolute top-1.5 right-1.5 block h-2 w-2 rounded-full bg-red-500 ring-2 ring-[var(--bg-surface)]"></span>
                 </button>
 
-                <div className="h-9 w-9 rounded-full bg-gradient-to-tr from-primary-100 to-primary-200 dark:from-primary-900 dark:to-primary-800 flex items-center justify-center text-primary-700 dark:text-primary-300 font-bold shadow-sm cursor-pointer ring-2 ring-transparent hover:ring-primary-500/30 transition-all">
-                    J
-                </div>
+                <UserProfileDropdown />
             </div>
         </header>
     );

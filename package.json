@@ -12,6 +12,7 @@
   "dependencies": {
     "@tailwindcss/vite": "^4.2.2",
     "@tanstack/react-table": "^8.21.3",
+    "axios": "^1.15.0",
     "dexie": "^4.4.2",
     "lucide-react": "^1.7.0",
     "qrcode.react": "^4.2.0",

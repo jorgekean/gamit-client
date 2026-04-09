@@ -1,17 +1,27 @@
 // src/pages/Login.tsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { api } from '../lib/api';
 import { Package, Mail, Lock, Eye, EyeOff, ArrowRight, ShieldCheck } from 'lucide-react';
 
 export function Login() {
     const [showPassword, setShowPassword] = useState(false);
+    const { login } = useAuth();
     const navigate = useNavigate();
 
-    const handleLogin = (e: React.FormEvent) => {
-        e.preventDefault();
-        // In the future, this is where you call your Fastify API.
-        // For now, we just redirect to the dashboard.
-        navigate('/');
+    const handleLogin = async (email: string, password: string) => {
+        try {
+            const response = await api.post('/auth/login', { email, password });
+
+            // Pass the user object and the JWT token to our context
+            login(response.data.user, response.data.token);
+
+            // Redirect to dashboard!
+            navigate('/');
+        } catch (error) {
+            console.error("Login failed", error);
+        }
     };
 
     return (
@@ -38,7 +48,13 @@ export function Login() {
                 </div>
 
                 {/* Login Form */}
-                <form onSubmit={handleLogin} className="space-y-5">
+                <form onSubmit={(e) => {
+                    e.preventDefault();
+                    const formData = new FormData(e.currentTarget);
+                    const email = formData.get('email') as string;
+                    const password = formData.get('password') as string;
+                    handleLogin(email, password);
+                }} className="space-y-5">
 
                     {/* Email / Username Input */}
                     <div className="space-y-1.5">
@@ -51,6 +67,7 @@ export function Login() {
                             </div>
                             <input
                                 type="text"
+                                name="email"
                                 required
                                 className="block w-full pl-11 pr-4 py-3 bg-gray-50/50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 focus:bg-[var(--bg-surface)] transition-all placeholder-gray-400"
                                 placeholder="jorge@calaca.gov.ph"
@@ -69,6 +86,7 @@ export function Login() {
                             </div>
                             <input
                                 type={showPassword ? 'text' : 'password'}
+                                name="password"
                                 required
                                 className="block w-full pl-11 pr-12 py-3 bg-gray-50/50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 focus:bg-[var(--bg-surface)] transition-all placeholder-gray-400"
                                 placeholder="••••••••"
