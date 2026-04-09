@@ -4,7 +4,7 @@ import type { Department } from './departmentService';
 import type { Employee } from './employeeService';
 import type { AssetCategory } from './assetCategoryService';
 import type { Asset } from './assetService';
-import type { AssetHistory } from './assetHIstoryService'; // <-- We will create this
+import type { AssetHistory } from './assetHistoryService'; // <-- We will create this
 
 export class GamitDatabase extends Dexie {
     departments!: Table<Department>;

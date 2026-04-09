@@ -1,6 +1,6 @@
 // src/hooks/useAssetHistory.ts
 import { useState, useCallback } from 'react';
-import { assetHistoryService, type AssetHistory } from '../services/assetHIstoryService';
+import { assetHistoryService, type AssetHistory } from '../services/assetHistoryService';
 
 export function useAssetHistory() {
     const [history, setHistory] = useState<AssetHistory[]>([]);
