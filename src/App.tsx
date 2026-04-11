@@ -20,6 +20,11 @@ import { Employees } from './pages/Employees';
 import { AssetCategories } from './pages/AssetCategories';
 import { AssetDetails } from './pages/AssetRegistry/AssetDetails';
 import { useSyncManager } from './hooks/useSyncManager';
+import { PTRReport } from './pages/Reports/PTRReport';
+import { PARReport } from './pages/Reports/PARReport';
+import { ICSReport } from './pages/Reports/ICSReport';
+import { IIRUPReport } from './pages/Reports/IIRUPReport';
+import { RPCPPEReport } from './pages/Reports/RPCPPEReport';
 
 function App() {
   useSyncManager(); // Custom hook to handle online/offline sync logic
@@ -47,6 +52,12 @@ function App() {
                   <Route path="departments" element={<Departments />} />
                   <Route path="employees" element={<Employees />} />
                   <Route path="assetcategories" element={<AssetCategories />} />
+                  <Route path="reports/ptr" element={<PTRReport />} />
+                  <Route path="reports/par" element={<PARReport />} />
+                  <Route path="reports/ics" element={<ICSReport />} />
+                  <Route path="reports/iirup" element={<IIRUPReport />} />
+                  <Route path="reports/rpcppe" element={<RPCPPEReport />} />
+
                 </Route>
               </Route>
             </Routes>

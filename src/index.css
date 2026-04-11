@@ -92,3 +92,40 @@ body {
     scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
   }
 }
+
+@media print {
+
+  /* Hides everything except the exact content we want to print */
+  body * {
+    visibility: hidden;
+  }
+
+  /* Makes sure our report and all its children are visible */
+  .min-h-screen.print\:bg-white,
+  .min-h-screen.print\:bg-white * {
+    visibility: visible;
+  }
+
+  /* Positions the report perfectly at the top left */
+  .min-h-screen.print\:bg-white {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Force the printer to use the default margins without adding extra paper */
+  html,
+  body {
+    height: auto;
+    overflow: hidden;
+    /* Prevents phantom scrolling on print */
+  }
+
+  @page {
+    margin: 0.5cm;
+  }
+
+}
