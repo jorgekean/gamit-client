@@ -12,7 +12,7 @@ import { ProtectedRoute } from './components/ProtectedRoute'; // ✨ 2. Import t
 
 // Layout & Pages
 import { AppLayout } from './components/layout/AppLayout';
-import { Login } from './pages/Login';
+import { Login } from './pages/Auth/Login';
 import { Dashboard } from './pages/Dashboard';
 import { AssetRegistry } from './pages/AssetRegistry';
 import { Departments } from './pages/Departments';
@@ -25,6 +25,7 @@ import { PARReport } from './pages/Reports/PARReport';
 import { ICSReport } from './pages/Reports/ICSReport';
 import { IIRUPReport } from './pages/Reports/IIRUPReport';
 import { RPCPPEReport } from './pages/Reports/RPCPPEReport';
+import { Register } from './pages/Auth/Register';
 
 function App() {
   useSyncManager(); // Custom hook to handle online/offline sync logic
@@ -41,6 +42,8 @@ function App() {
             <Routes>
               {/* 🔓 PUBLIC ROUTE */}
               <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+
 
               {/* 🔒 PROTECTED ROUTES (Requires Login) */}
               <Route element={<ProtectedRoute />}>

@@ -4,7 +4,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 // Match this to the User object your backend returns
 interface User {
     id: string;
-    email: string;
+    employeeId: string;
     name: string;
     role: string;
 }

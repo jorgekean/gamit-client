@@ -1,23 +1,23 @@
 // src/pages/Login.tsx
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { api } from '../lib/api';
-import { Package, Mail, Lock, Eye, EyeOff, ArrowRight, ShieldCheck } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
+import { api } from '../../lib/api';
+import { Package, IdCard, Lock, Eye, EyeOff, ArrowRight, ShieldCheck } from 'lucide-react';
 
 export function Login() {
     const [showPassword, setShowPassword] = useState(false);
     const { login } = useAuth();
     const navigate = useNavigate();
 
-    const handleLogin = async (email: string, password: string) => {
+    const handleLogin = async (employeeId: string, password: string) => {
         try {
-            const response = await api.post('/auth/login', { email, password });
+            const response = await api.post('/auth/login', { employeeId, password });
 
             // Pass the user object and the JWT token to our context
             login(response.data.user, response.data.token);
 
-            // Redirect to dashboard!
+            // Redirect to dashboard
             navigate('/');
         } catch (error) {
             console.error("Login failed", error);
@@ -43,7 +43,7 @@ export function Login() {
                         Gamit
                     </h1>
                     <p className="text-[var(--text-muted)] text-sm font-medium">
-                        Property and Asset Management System
+                        Government Asset Management Information Tool
                     </p>
                 </div>
 
@@ -51,26 +51,26 @@ export function Login() {
                 <form onSubmit={(e) => {
                     e.preventDefault();
                     const formData = new FormData(e.currentTarget);
-                    const email = formData.get('email') as string;
+                    const employeeId = formData.get('employeeId') as string;
                     const password = formData.get('password') as string;
-                    handleLogin(email, password);
+                    handleLogin(employeeId, password);
                 }} className="space-y-5">
 
-                    {/* Email / Username Input */}
+                    {/* Employee ID Input */}
                     <div className="space-y-1.5">
                         <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
-                            Email or Employee ID
+                            Employee ID
                         </label>
                         <div className="relative group">
                             <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                                <Mail className="h-5 w-5 text-gray-400 group-focus-within:text-primary-500 transition-colors" />
+                                <IdCard className="h-5 w-5 text-gray-400 group-focus-within:text-primary-500 transition-colors" />
                             </div>
                             <input
                                 type="text"
-                                name="email"
+                                name="employeeId"
                                 required
                                 className="block w-full pl-11 pr-4 py-3 bg-gray-50/50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 focus:bg-[var(--bg-surface)] transition-all placeholder-gray-400"
-                                placeholder="jorge@calaca.gov.ph"
+                                placeholder="EMP-2026-001"
                             />
                         </div>
                     </div>
@@ -130,6 +130,14 @@ export function Login() {
                         <ArrowRight className="w-4 h-4" />
                     </button>
                 </form>
+
+                {/* Registration Link */}
+                <div className="mt-6 text-center text-sm text-[var(--text-muted)]">
+                    Don't have an account yet?{' '}
+                    <Link to="/register" className="text-primary-600 dark:text-primary-400 font-semibold hover:underline transition-colors">
+                        Activate it here
+                    </Link>
+                </div>
 
                 {/* Security Badge */}
                 <div className="mt-8 flex items-center justify-center gap-2 text-xs text-[var(--text-muted)] font-medium">
