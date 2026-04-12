@@ -1,50 +1,91 @@
-import React from 'react';
-import { Printer, ArrowLeft } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-
-// Mock data: In your actual app, fetch this via your Fastify API using the employee/asset ID
-const mockPARData = {
-    parNo: 'PAR-2026-04-045',
-    entityName: 'Municipality of Calaca',
-    fundCluster: '01 - Regular Agency Fund',
-    issuedBy: {
-        name: 'Jorge Gamit',
-        designation: 'General Services Officer',
-        date: 'April 11, 2026'
-    },
-    receivedBy: {
-        name: 'Juan Dela Cruz',
-        designation: 'Municipal Engineer',
-        date: 'April 11, 2026'
-    },
-    items: [
-        {
-            qty: 1,
-            unit: 'unit',
-            description: 'Dell Latitude 5420 Laptop, Core i7, 16GB RAM, 512GB SSD',
-            propertyNo: 'IT-LT-2026-001',
-            dateAcquired: '2026-03-15',
-            amount: 65000.00
-        },
-        {
-            qty: 1,
-            unit: 'pc',
-            description: 'Epson L3250 EcoTank Printer',
-            propertyNo: 'IT-PR-2026-002',
-            dateAcquired: '2026-03-15',
-            amount: 10500.00
-        }
-    ]
-};
+// src/pages/Reports/PARReport.tsx
+import React, { useEffect, useState } from 'react';
+import { Printer, ArrowLeft, Clock, AlertTriangle } from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { api } from '../../lib/api';
+import { toast } from 'sonner';
 
 export function PARReport() {
     const navigate = useNavigate();
-    const data = mockPARData;
+    const [searchParams] = useSearchParams();
+
+    // Extract context from URL Query Parameters (?assetId=123 or ?employeeId=456)
+    const assetId = searchParams.get('assetId');
+    const employeeId = searchParams.get('employeeId');
+
+    const [data, setData] = useState<any>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    // Fetch dynamic report data based on URL parameters
+    useEffect(() => {
+        const fetchPARData = async () => {
+            if (!assetId && !employeeId) {
+                setError("Invalid request. No asset or employee specified.");
+                setIsLoading(false);
+                return;
+            }
+
+            setIsLoading(true);
+            setError(null);
+
+            try {
+                // Construct query string safely
+                const params = new URLSearchParams();
+                if (assetId) params.append('assetId', assetId);
+                if (employeeId) params.append('employeeId', employeeId);
+
+                // Call the Fastify endpoint
+                const response = await api.get(`/reports/par?${params.toString()}`);
+                setData(response.data);
+            } catch (err: any) {
+                console.error("Failed to generate PAR:", err);
+                const errorMsg = err.response?.data?.message || "Failed to load PAR data from the server.";
+                setError(errorMsg);
+                toast.error(errorMsg);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchPARData();
+    }, [assetId, employeeId]);
 
     const handlePrint = () => {
         window.print();
     };
 
+    // --- Loading State UI ---
+    if (isLoading) {
+        return (
+            <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-4">
+                <Clock className="w-10 h-10 text-emerald-500 animate-spin mb-4" />
+                <h2 className="text-xl font-bold text-gray-800 mb-1">Generating PAR...</h2>
+                <p className="text-gray-500">Compiling COA records from the HR Database.</p>
+            </div>
+        );
+    }
+
+    // --- Error State UI ---
+    if (error || !data) {
+        return (
+            <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-4">
+                <div className="bg-white p-8 rounded-2xl shadow-sm text-center max-w-md">
+                    <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+                    <h2 className="text-xl font-bold text-gray-900 mb-2">Report Generation Failed</h2>
+                    <p className="text-sm text-gray-600 mb-6">{error}</p>
+                    <button
+                        onClick={() => navigate(-1)}
+                        className="bg-gray-900 hover:bg-gray-800 text-white px-6 py-2.5 rounded-xl font-semibold transition-colors"
+                    >
+                        Go Back
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    // --- Official COA Report UI ---
     return (
         <div className="min-h-screen bg-gray-100 p-4 sm:p-8 print:bg-white print:p-0 text-gray-900">
 
@@ -54,11 +95,11 @@ export function PARReport() {
                     onClick={() => navigate(-1)}
                     className="flex items-center gap-2 text-gray-600 hover:text-gray-900 font-medium"
                 >
-                    <ArrowLeft className="w-4 h-4" /> Back to Employee Profile
+                    <ArrowLeft className="w-4 h-4" /> Go Back
                 </button>
                 <button
                     onClick={handlePrint}
-                    className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg shadow-sm transition-colors font-medium"
+                    className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white px-5 py-2.5 rounded-xl shadow-sm transition-colors font-bold"
                 >
                     <Printer className="w-4 h-4" /> Print PAR
                 </button>
@@ -98,7 +139,7 @@ export function PARReport() {
                     <table className="w-full text-center">
                         <thead className="border-b-2 border-black bg-white">
                             <tr className="font-semibold">
-                                <th className="p-2 border-r border-black w-16">Quantity</th>
+                                <th className="p-2 border-r border-black w-16">Qty</th>
                                 <th className="p-2 border-r border-black w-16">Unit</th>
                                 <th className="p-2 border-r border-black">Description</th>
                                 <th className="p-2 border-r border-black w-32">Property Number</th>
@@ -107,7 +148,8 @@ export function PARReport() {
                             </tr>
                         </thead>
                         <tbody>
-                            {data.items.map((item, idx) => (
+                            {/* Dynamically map over API fetched items */}
+                            {data.items.map((item: any, idx: number) => (
                                 <tr key={idx} className="border-b border-gray-300 print:border-black align-top">
                                     <td className="p-2 border-r border-black">{item.qty}</td>
                                     <td className="p-2 border-r border-black">{item.unit}</td>
@@ -119,15 +161,15 @@ export function PARReport() {
                                     </td>
                                 </tr>
                             ))}
-                            {/* Empty padding rows to make the form look official even if there is only 1 item */}
+                            {/* Empty padding rows to fill space for official appearance */}
                             {Array.from({ length: Math.max(0, 8 - data.items.length) }).map((_, i) => (
-                                <tr key={`empty-${i}`} className="border-b border-gray-300 print:border-black">
-                                    <td className="p-4 border-r border-black"></td>
-                                    <td className="p-4 border-r border-black"></td>
-                                    <td className="p-4 border-r border-black"></td>
-                                    <td className="p-4 border-r border-black"></td>
-                                    <td className="p-4 border-r border-black"></td>
-                                    <td className="p-4"></td>
+                                <tr key={`empty-${i}`} className="border-b border-gray-300 print:border-black h-8">
+                                    <td className="border-r border-black"></td>
+                                    <td className="border-r border-black"></td>
+                                    <td className="border-r border-black"></td>
+                                    <td className="border-r border-black"></td>
+                                    <td className="border-r border-black"></td>
+                                    <td></td>
                                 </tr>
                             ))}
                         </tbody>

@@ -1,9 +1,9 @@
 // src/pages/AssetRegistry/AssetDetails.tsx
-import React, { useMemo, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
     ArrowLeft, Edit2, Trash2, Clock, CalendarDays,
-    Building2, UserCheck, Tag, Target, FileText, ChevronDown
+    Building2, UserCheck, Tag, Target, FileText, ChevronDown, Printer
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -16,7 +16,7 @@ import { useConfirm } from '../../contexts/ConfirmContext';
 
 // Components
 import { AssetAuditTrail } from '../../components/ui/AuditTrail';
-import { AssetFormDrawer } from './AssetFormDrawer'; // Reuse the existing drawer for editing
+import { AssetFormDrawer } from './AssetFormDrawer';
 
 /**
  * StatusBadge Component
@@ -28,7 +28,7 @@ function StatusBadge({ status }: { status?: string }) {
     const colors =
         status === 'Serviceable' ? 'bg-emerald-50 text-emerald-700 border-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20' :
             status === 'Unserviceable' ? 'bg-red-50 text-red-700 border-red-100 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/20' :
-                'bg-amber-50 text-amber-700 border-amber-100 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20'; // For Repair
+                'bg-amber-50 text-amber-700 border-amber-100 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20';
 
     return (
         <span className={`${base} ${colors}`}>
@@ -44,34 +44,30 @@ function StatusBadge({ status }: { status?: string }) {
  * current assignment, financial data, and full lifecycle history.
  */
 export function AssetDetails() {
-    const { id } = useParams<{ id: string }>(); // Extract dynamic :id from URL
+    const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const confirm = useConfirm();
 
-    // --- 1. Data Context Hooks ---
+    // --- Data Context Hooks ---
     const { getById, delete: softDelete } = useAssets();
     const { categories } = useAssetCategories();
     const { departments } = useDepartments();
     const { employees } = useEmployees();
 
-    // --- 2. Local State ---
+    // --- Local State ---
     const [asset, setAsset] = useState<any>(null);
     const [loading, setLoading] = useState(true);
 
     const [searchParams, setSearchParams] = useSearchParams();
     const currentAction = searchParams.get('action');
 
-    /**
- * Sync logic: Refresh the full-page data whenever the 
- * Edit Drawer closes (action becomes null).
- */
+    // Sync logic: Refresh the full-page data whenever the Edit Drawer closes
     useEffect(() => {
         if (!currentAction && asset) {
             fetchAsset();
         }
     }, [currentAction]);
 
-    // --- 3. Data Fetching ---
     const fetchAsset = async () => {
         if (!id) return;
         setLoading(true);
@@ -81,7 +77,7 @@ export function AssetDetails() {
                 setAsset(data);
             } else {
                 toast.error('Asset not found.');
-                navigate('/assets'); // Redirect if ID is invalid
+                navigate('/assets');
             }
         } finally {
             setLoading(false);
@@ -92,7 +88,7 @@ export function AssetDetails() {
         fetchAsset();
     }, [id]);
 
-    // --- 4. Display Name Resolution ---
+    // --- Display Name Resolution ---
     const getCategoryName = (catId: string) => categories.find(c => c.id === catId)?.name || 'Unknown Category';
     const getDeptName = (deptId?: string | null) => departments.find(d => d.id === deptId)?.name || 'Unassigned';
     const getEmpName = (empId?: string | null) => {
@@ -100,7 +96,7 @@ export function AssetDetails() {
         return e ? `${e.firstName} ${e.lastName}` : 'Unassigned';
     };
 
-    // --- 5. Action Handlers ---
+    // --- Action Handlers ---
     const handleDelete = async () => {
         if (!asset) return;
         const isConfirmed = await confirm({
@@ -114,14 +110,23 @@ export function AssetDetails() {
             try {
                 await softDelete(asset.id);
                 toast.success('Asset archived successfully.');
-                navigate('/assets'); // Return to master list after deletion
+                navigate('/assets');
             } catch (error) {
                 toast.error('Failed to delete asset.');
             }
         }
     };
 
-    // --- 6. Loading/Error States ---
+    const handlePrintReport = () => {
+        // COA Capitalization Threshold Logic: >= 50k is PAR, < 50k is ICS
+        if (asset.cost >= 50000) {
+            // Notice we use ?assetId= instead of /
+            navigate(`/reports/par?assetId=${asset.id}`);
+        } else {
+            navigate(`/reports/ics?assetId=${asset.id}`);
+        }
+    };
+
     if (loading) {
         return (
             <div className="flex flex-col items-center justify-center p-24 text-center">
@@ -131,10 +136,11 @@ export function AssetDetails() {
         );
     }
 
-    if (!asset) return null; // Should be handled by redirect
+    if (!asset) return null;
 
     // Philippine Peso Formatter
     const peso = new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' });
+    const isHighValue = asset.cost >= 50000;
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
@@ -158,10 +164,20 @@ export function AssetDetails() {
                     </p>
                 </div>
 
-                {/* Action Buttons (Visible on Mobile) */}
-                <div className="flex items-center gap-3 sm:self-end">
+                {/* Action Buttons */}
+                <div className="flex flex-wrap items-center gap-3 sm:self-end">
+
+                    {/* Dynamic COA Print Button */}
                     <button
-                        onClick={() => setSearchParams({ action: 'edit', id: asset.id })} // Trigger via URL
+                        onClick={handlePrintReport}
+                        className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2.5 px-5 py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl transition-colors shadow-sm"
+                    >
+                        <Printer className="w-4 h-4" />
+                        {isHighValue ? 'Print PAR' : 'Print ICS'}
+                    </button>
+
+                    <button
+                        onClick={() => setSearchParams({ action: 'edit', id: asset.id })}
                         className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2.5 px-5 py-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 text-sm font-semibold rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors shadow-sm"
                     >
                         <Edit2 className="w-4 h-4" />
@@ -172,7 +188,7 @@ export function AssetDetails() {
                         className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2.5 px-5 py-3 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-xl transition-colors shadow-sm"
                     >
                         <Trash2 className="w-4 h-4" />
-                        Archive Asset
+                        Archive
                     </button>
                 </div>
             </div>
@@ -218,7 +234,7 @@ export function AssetDetails() {
                                 { label: 'Brand', value: asset.brand },
                                 { label: 'Model', value: asset.model },
                                 { label: 'Serial / Engine Number', value: asset.serialNo, isMono: true },
-                                { label: 'Specific Use Case', value: 'General Office Use' }, // Placeholder for now
+                                { label: 'Specific Use Case', value: 'General Office Use' },
                             ].map((item, i) => (
                                 <div key={i} className="bg-gray-50 dark:bg-gray-900 p-5 rounded-2xl border border-gray-100 dark:border-white/5 space-y-1.5">
                                     <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">{item.label}</p>
@@ -254,6 +270,10 @@ export function AssetDetails() {
                                 <p className="text-2xl font-black text-emerald-700 dark:text-emerald-400">
                                     {peso.format(asset.cost)}
                                 </p>
+                                {/* COA classification visual indicator */}
+                                <p className="text-[10px] mt-1 font-semibold text-emerald-600/80">
+                                    {isHighValue ? 'Capitalized PPE (PAR Required)' : 'Semi-Expendable (ICS Required)'}
+                                </p>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="flex items-center gap-2.5">
@@ -263,19 +283,18 @@ export function AssetDetails() {
                                         <p className="text-sm font-semibold text-gray-900 dark:text-gray-200">{asset.dateAcquired}</p>
                                     </div>
                                 </div>
-                                {/* Future: We can calculate depreciation here */}
                                 <div className="flex items-center gap-2.5">
                                     <Clock className="w-4 h-4 text-gray-400" />
                                     <div>
                                         <p className="text-[10px] text-gray-400 font-semibold uppercase">Useful Life</p>
-                                        <p className="text-sm font-semibold text-gray-900 dark:text-gray-200">5 Years (Est.)</p>
+                                        <p className="text-sm font-semibold text-gray-900 dark:text-gray-200">{asset.usefulLife || 5} Years</p>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    {/* D. Additional Context / Placeholder */}
+                    {/* D. Additional Context */}
                     <div className="bg-white dark:bg-gray-900 p-6 md:p-7 rounded-3xl border-2 border-dashed border-gray-100 dark:border-gray-800 text-center flex flex-col items-center">
                         <Building2 className="w-10 h-10 text-gray-300 mb-4" />
                         <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">Location Tracking</p>
@@ -295,14 +314,12 @@ export function AssetDetails() {
                     Property Lifecycle & Accountability History
                 </h3>
 
-                {/* Pass ID to existing Audit Trail component. Now has infinite width to breathe. */}
                 <div className="animate-in fade-in delay-150">
                     <AssetAuditTrail assetId={asset.id} />
                 </div>
             </div>
 
             {/* --- FEATURE COMPONENTS --- */}
-
             <AssetFormDrawer />
 
         </div>
