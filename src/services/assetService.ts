@@ -1,7 +1,7 @@
 // src/services/assetService.ts
 import { v4 as uuidv4 } from 'uuid';
 import { db } from '../lib/db';
-import { api } from '../lib/api'; // ✨ Import your Axios instance
+import { api } from '../lib/api';
 import type { HistoryAction } from './assetHistoryService';
 
 export type AssetStatus = 'Serviceable' | 'Unserviceable' | 'For Repair';
@@ -23,7 +23,7 @@ export interface Asset {
     created_at: string;
     updated_at: string;
     deleted_at: string | null;
-    syncState?: SyncState; // ✨ Added SyncState
+    syncState?: SyncState;
 }
 
 export interface AssetFilters {
@@ -32,7 +32,7 @@ export interface AssetFilters {
     employeeId?: string | null;
     status?: string | null;
     categoryId?: string | null;
-    page?: number; // Added for server-side pagination
+    page?: number;
     limit?: number;
 }
 
@@ -55,12 +55,9 @@ export const assetService = {
                 });
                 const { data, meta } = response.data;
 
-                // 2. Cache Strategy (Only cache page 1, max 50 items)
+                // 2. Cache Strategy
                 if (!filters?.page || filters.page === 1) {
-                    // Clear out old 'synced' items to prevent DB bloat
                     await db.assets.where('syncState').equals('synced').delete();
-
-                    // Save the fresh items
                     const itemsToCache = data.map((a: Asset) => ({ ...a, syncState: 'synced' }));
                     await db.assets.bulkPut(itemsToCache);
                 }
@@ -74,7 +71,6 @@ export const assetService = {
         let results = await db.assets.toCollection().reverse().sortBy('created_at');
 
         results = results.filter(asset => {
-            // Hide soft-deleted AND pending_delete items from the UI
             const isNotDeleted = asset.deleted_at === null && asset.syncState !== 'pending_delete';
 
             if (filters) {
@@ -96,7 +92,6 @@ export const assetService = {
     },
 
     async getById(id: string): Promise<Asset | undefined> {
-        // Try to get the freshest data if online
         if (navigator.onLine) {
             try {
                 const res = await api.get(`/assets/${id}`);
@@ -114,7 +109,7 @@ export const assetService = {
     async create(data: Omit<Asset, 'id' | 'created_at' | 'updated_at' | 'deleted_at' | 'syncState'>): Promise<Asset> {
         const newAsset: Asset = {
             ...data,
-            id: uuidv4(), // ✨ Client-side UUID generation!
+            id: uuidv4(),
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
             deleted_at: null,
@@ -127,20 +122,17 @@ export const assetService = {
             action: 'CREATED' as HistoryAction,
             description: 'Asset officially registered into the Gamit system.',
             date: new Date().toISOString(),
-            syncState: 'pending_create' // Tag history for syncing too
+            syncState: 'pending_create'
         };
 
-        // 1. Save locally immediately (Optimistic UI)
         await db.assets.add(newAsset);
         await db.assetHistory.add(historyRecord);
 
-        // 2. Try to sync to server
         if (navigator.onLine) {
             try {
                 await api.post('/assets', newAsset);
-                await api.post('/history', historyRecord); // Assumes you have a generic history endpoint
+                await api.post('/asset-history', historyRecord);
 
-                // Success! Mark as synced.
                 await db.assets.update(newAsset.id, { syncState: 'synced' });
                 await db.assetHistory.update(historyRecord.id, { syncState: 'synced' });
                 newAsset.syncState = 'synced';
@@ -168,24 +160,17 @@ export const assetService = {
             return undefined;
         };
 
+        // --- Name Resolvers ---
         const resolveDepartmentName = async (value: unknown): Promise<string> => {
-            if (value === null || value === '') return 'Unassigned';
-            if (typeof value === 'object' && value !== null) {
-                const objName = (value as { name?: unknown }).name;
-                if (typeof objName === 'string' && objName.trim()) return objName;
-            }
-
             const id = normalizeForeignKey(value);
             if (!id) return 'Unassigned';
 
             if (navigator.onLine) {
                 try {
                     const res = await api.get(`/departments/${id}`);
-                    const dept = res.data?.data ?? res.data;
+                    const dept = res.data?.data || res.data; // Handle both wrapped and raw Fastify responses
                     if (dept?.name) return dept.name;
-                } catch {
-                    // Fall back to local cache below
-                }
+                } catch (e) { /* Silently fall back to Dexie */ }
             }
 
             const local = await db.departments.get(id);
@@ -193,29 +178,15 @@ export const assetService = {
         };
 
         const resolveEmployeeName = async (value: unknown): Promise<string> => {
-            if (value === null || value === '') return 'Unassigned';
-            if (typeof value === 'object' && value !== null) {
-                const firstName = (value as { firstName?: unknown }).firstName;
-                const lastName = (value as { lastName?: unknown }).lastName;
-                if (typeof firstName === 'string' && typeof lastName === 'string') {
-                    const full = `${firstName} ${lastName}`.trim();
-                    if (full) return full;
-                }
-                const objName = (value as { name?: unknown }).name;
-                if (typeof objName === 'string' && objName.trim()) return objName;
-            }
-
             const id = normalizeForeignKey(value);
             if (!id) return 'Unassigned';
 
             if (navigator.onLine) {
                 try {
                     const res = await api.get(`/employees/${id}`);
-                    const emp = res.data?.data ?? res.data;
-                    if (emp?.firstName && emp?.lastName) return `${emp.firstName} ${emp.lastName}`;
-                } catch {
-                    // Fall back to local cache below
-                }
+                    const emp = res.data?.data || res.data;
+                    if (emp?.firstName) return `${emp.firstName} ${emp.lastName}`;
+                } catch (e) { /* Silently fall back to Dexie */ }
             }
 
             const local = await db.employees.get(id);
@@ -223,23 +194,15 @@ export const assetService = {
         };
 
         const resolveCategoryName = async (value: unknown): Promise<string> => {
-            if (value === null || value === '') return 'Unknown';
-            if (typeof value === 'object' && value !== null) {
-                const objName = (value as { name?: unknown }).name;
-                if (typeof objName === 'string' && objName.trim()) return objName;
-            }
-
             const id = normalizeForeignKey(value);
             if (!id) return 'Unknown';
 
             if (navigator.onLine) {
                 try {
                     const res = await api.get(`/asset-categories/${id}`);
-                    const category = res.data?.data ?? res.data;
-                    if (category?.name) return category.name;
-                } catch {
-                    // Fall back to local cache below
-                }
+                    const cat = res.data?.data || res.data;
+                    if (cat?.name) return cat.name;
+                } catch (e) { /* Silently fall back to Dexie */ }
             }
 
             const local = await db.assetCategories.get(id);
@@ -254,37 +217,24 @@ export const assetService = {
         };
 
         const allowedFields: Array<keyof Omit<Asset, 'id' | 'created_at' | 'updated_at' | 'deleted_at' | 'syncState'>> = [
-            'propertyNo',
-            'name',
-            'categoryId',
-            'cost',
-            'dateAcquired',
-            'brand',
-            'model',
-            'serialNo',
-            'status',
-            'departmentId',
-            'employeeId',
+            'propertyNo', 'name', 'categoryId', 'cost', 'dateAcquired',
+            'brand', 'model', 'serialNo', 'status', 'departmentId', 'employeeId',
         ];
 
         const cleanData: Partial<Omit<Asset, 'id' | 'created_at' | 'updated_at' | 'deleted_at' | 'syncState'>> = {};
         for (const field of allowedFields) {
             const value = normalizedData[field];
-            if (value !== undefined) {
-                cleanData[field] = value as any;
-            }
+            if (value !== undefined) cleanData[field] = value as any;
         }
 
         const updatedData = { ...cleanData, updated_at: new Date().toISOString() };
-
-        // Determine if it was already pending creation
         const newSyncState = oldAsset.syncState === 'pending_create' ? 'pending_create' : 'pending_update';
 
-        // 1. Update Asset locally
         await db.assets.update(id, { ...updatedData, syncState: newSyncState });
 
         // --- THE DYNAMIC DIFF ENGINE ---
-        const changes: { field: string; from: any; to: any }[] = [];
+        // ✨ Updated type to strictly allow fromId and toId parameters
+        const changes: { field: string; from: any; to: any; fromId?: string | null; toId?: string | null }[] = [];
         let action: 'TRANSFERRED' | 'STATUS_CHANGED' | 'UPDATED' = 'UPDATED';
 
         const fieldLabels: Record<string, string> = {
@@ -302,12 +252,16 @@ export const assetService = {
             const oldVal = oldAsset[key];
             const newVal = cleanData[key];
             const isForeignKeyField = key === 'departmentId' || key === 'employeeId' || key === 'categoryId';
+
+            // These contain the actual database UUIDs
             const comparableOldVal = isForeignKeyField ? normalizeForeignKey(oldVal) : oldVal;
             const comparableNewVal = isForeignKeyField ? normalizeForeignKey(newVal) : newVal;
 
             if (comparableOldVal !== comparableNewVal) {
                 let fromVal: any = comparableOldVal || 'N/A';
                 let toVal: any = comparableNewVal || 'N/A';
+                let fromId: string | null | undefined;
+                let toId: string | null | undefined;
 
                 if (key === 'departmentId') {
                     fromVal = await resolveDepartmentName(oldVal);
@@ -317,6 +271,9 @@ export const assetService = {
                 else if (key === 'employeeId') {
                     fromVal = await resolveEmployeeName(oldVal);
                     toVal = await resolveEmployeeName(newVal);
+                    // ✨ Capture the raw Database UUIDs for the backend payload
+                    fromId = comparableOldVal as string | null;
+                    toId = comparableNewVal as string | null;
                     action = 'TRANSFERRED';
                 }
                 else if (key === 'categoryId') {
@@ -331,7 +288,14 @@ export const assetService = {
                     action = 'STATUS_CHANGED';
                 }
 
-                changes.push({ field: fieldLabels[key] || key, from: fromVal, to: toVal });
+                // Push the data, attaching the IDs only if they exist
+                changes.push({
+                    field: fieldLabels[key] || key,
+                    from: fromVal,
+                    to: toVal,
+                    ...(fromId !== undefined && { fromId }),
+                    ...(toId !== undefined && { toId })
+                });
             }
         }
 
@@ -347,16 +311,14 @@ export const assetService = {
                 assetId: id,
                 action,
                 description,
-                changes, // Assuming your backend supports JSON arrays for changes
+                changes,
                 date: new Date().toISOString(),
-                syncState: 'pending_create' // History records are always "creates"
+                syncState: 'pending_create'
             };
 
-            // Save history locally
             await db.assetHistory.add(historyRecord);
         }
 
-        // 2. Try to sync to server
         if (navigator.onLine && oldAsset.syncState !== 'pending_create') {
             try {
                 await api.put(`/assets/${id}`, updatedData);
@@ -379,9 +341,7 @@ export const assetService = {
         const existing = await db.assets.get(id);
         if (!existing) return;
 
-        // 1. Delete locally
         if (existing.syncState === 'pending_create') {
-            // It never existed on the server, so erase it completely locally
             await db.assets.delete(id);
             return;
         } else {
@@ -391,11 +351,10 @@ export const assetService = {
             });
         }
 
-        // 2. Sync to server
         if (navigator.onLine) {
             try {
                 await api.delete(`/assets/${id}`);
-                await db.assets.delete(id); // Erase from local cache to keep it clean
+                await db.assets.delete(id);
             } catch (error) {
                 console.warn('Failed to sync delete. Queued in Dexie.');
             }
