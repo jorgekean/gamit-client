@@ -20,26 +20,10 @@ export const columns = (
             header: 'Asset Details',
             cell: ({ row }) => {
                 const category = categories.find(c => c.id === row.original.categoryId);
-                const syncState = row.original.syncState; // ✨ Extract the sync state
 
                 return (
                     <div className="flex flex-col">
-                        {/* ✨ Add flex row to align badges next to the name */}
-                        <div className="flex items-center gap-2">
-                            <span className="font-semibold text-gray-900 dark:text-white">{row.original.name}</span>
-
-                            {/* ✨ The Unsynced Badges */}
-                            {syncState === 'pending_create' && (
-                                <span className="bg-emerald-100 text-emerald-700 text-[10px] px-2 py-0.5 rounded-full font-bold border border-emerald-200">
-                                    Unsynced (New)
-                                </span>
-                            )}
-                            {syncState === 'pending_update' && (
-                                <span className="bg-amber-100 text-amber-700 text-[10px] px-2 py-0.5 rounded-full font-bold border border-amber-200">
-                                    Unsynced (Edit)
-                                </span>
-                            )}
-                        </div>
+                        <span className="font-semibold text-gray-900 dark:text-white">{row.original.name}</span>
                         <span className="text-xs text-gray-500">{category?.name || 'Unknown'}</span>
                     </div>
                 );

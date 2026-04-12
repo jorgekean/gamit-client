@@ -1,4 +1,3 @@
-import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'sonner';
 
@@ -19,7 +18,6 @@ import { Departments } from './pages/Departments';
 import { Employees } from './pages/Employees';
 import { AssetCategories } from './pages/AssetCategories';
 import { AssetDetails } from './pages/AssetRegistry/AssetDetails';
-import { useSyncManager } from './hooks/useSyncManager';
 import { PTRReport } from './pages/Reports/PTRReport';
 import { PARReport } from './pages/Reports/PARReport';
 import { ICSReport } from './pages/Reports/ICSReport';
@@ -28,12 +26,8 @@ import { RPCPPEReport } from './pages/Reports/RPCPPEReport';
 import { Register } from './pages/Auth/Register';
 
 function App() {
-  useSyncManager(); // Custom hook to handle online/offline sync logic
-
-
   return (
     <ThemeProvider defaultTheme="system">
-      {/* ✨ 3. Wrap everything that needs authentication state in AuthProvider */}
       <AuthProvider>
         <ConfirmProvider>
           <BrowserRouter>

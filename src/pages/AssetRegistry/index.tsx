@@ -2,9 +2,8 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
-    Plus, Search, QrCode, X, Eye, History, Filter, Package
+    Plus, Search, Filter, Package, X
 } from 'lucide-react';
-import { toast } from 'sonner';
 
 // Data Orchestration Hooks
 import { useAssets } from '../../hooks/useAssets';
@@ -26,8 +25,8 @@ import { columns } from './columns';
 
 /**
  * AssetRegistry Component
- * Central hub for asset management, supporting advanced filtering,
- * server-side pagination, and offline-first syncing.
+ * Central hub for asset management, supporting advanced filtering
+ * and server-side pagination.
  */
 export function AssetRegistry() {
     // --- 1. Local UI State ---
@@ -46,8 +45,6 @@ export function AssetRegistry() {
     const catFilter = searchParams.get('cat');
     const showFilters = searchParams.get('filters') === 'true';
 
-    // --- 3. Data & Context Hooks ---
-    // ✨ Destructure setQueryParams, meta, and delete from our upgraded hook
     const {
         assets,
         meta,
@@ -64,16 +61,9 @@ export function AssetRegistry() {
     const { employees } = useEmployees();
     const confirm = useConfirm();
 
-    // --- 4. State Synchronization ---
-
-    /**
-     * Effect: Sync UI State to the Service Layer
-     * Whenever a user types a search, changes a filter, or clicks "Next Page",
-     * we update the hook's queryParams, which automatically triggers a background fetch.
-     */
     useEffect(() => {
         setQueryParams({
-            page: pagination.pageIndex + 1, // API is 1-indexed, Table is 0-indexed
+            page: pagination.pageIndex + 1,
             limit: pagination.pageSize,
             search: searchTerm || undefined,
             departmentId: deptFilter,
@@ -83,15 +73,9 @@ export function AssetRegistry() {
         });
     }, [pagination, searchTerm, deptFilter, empFilter, statusFilter, catFilter, setQueryParams]);
 
-    /**
-     * Effect: Pagination Reset
-     * Ensures users return to page 1 whenever they perform a NEW search or apply a filter.
-     */
     useEffect(() => {
         setPagination(prev => ({ ...prev, pageIndex: 0 }));
     }, [searchTerm, deptFilter, empFilter, statusFilter, catFilter]);
-
-    // --- 5. Action Handlers ---
 
     const handleDelete = useCallback(async (id: string, name: string) => {
         const isConfirmed = await confirm({
@@ -103,7 +87,7 @@ export function AssetRegistry() {
 
         if (isConfirmed) {
             try {
-                await softDelete(id); // The hook handles the toast and optimistic UI update!
+                await softDelete(id);
             } catch (error) {
                 console.error('Delete failed', error);
             }
@@ -116,7 +100,6 @@ export function AssetRegistry() {
         setSearchParams(newParams);
     };
 
-    // Helper functions for Filter Banner
     const getCategoryName = (id: string) => categories.find(c => c.id === id)?.name || 'Unknown';
     const getDeptName = (id?: string | null) => departments.find(d => d.id === id)?.name || 'Unassigned';
     const getEmpName = (id?: string | null) => {
