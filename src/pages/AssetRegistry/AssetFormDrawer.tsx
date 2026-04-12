@@ -129,8 +129,11 @@ export function AssetFormDrawer() {
                 await update(targetId, payload);
                 toast.success(`Asset updated!`, { id: toastId });
             }
-            await refresh();
+
+            // Notice we removed await refresh() here! 
+            // The window.dispatchEvent in the hook automatically refreshes the table underneath.
             closeDrawer();
+
         } catch (error) {
             toast.error('Failed to save asset.', { id: toastId });
         } finally {
