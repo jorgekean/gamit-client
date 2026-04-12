@@ -79,13 +79,13 @@ export const columns = (
                     >
                         <QrCode className="w-4 h-4" />
                     </button>
-                    <button
-                        onClick={() => setSearchParams({ action: 'edit', id: row.original.id })}
+                    <Link
+                        to={`/assets/${row.original.id}/edit`}
                         className="p-2 text-gray-400 hover:text-primary-600 rounded-lg transition-colors"
                         title="Edit"
                     >
                         <Edit2 className="w-4 h-4" />
-                    </button>
+                    </Link>
                     <button
                         onClick={() => handleDelete(row.original.id, row.original.name)}
                         className="p-2 text-gray-400 hover:text-red-600 rounded-lg transition-colors"

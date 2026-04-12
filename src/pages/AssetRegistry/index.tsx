@@ -1,6 +1,6 @@
 // src/pages/AssetRegistry/index.tsx
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import {
     Plus, Search, Filter, Package, X
 } from 'lucide-react';
@@ -37,6 +37,8 @@ export function AssetRegistry() {
     const [searchParams, setSearchParams] = useSearchParams();
     const qrId = searchParams.get('qr');
     const historyId = searchParams.get('history');
+    const navigate = useNavigate();
+
 
     // Filters extracted from URL
     const deptFilter = searchParams.get('dept');
@@ -122,7 +124,7 @@ export function AssetRegistry() {
                     <p className="text-sm text-[var(--text-muted)] mt-1">Master database and lifecycle tracker for all municipal properties.</p>
                 </div>
                 <button
-                    onClick={() => setSearchParams({ action: 'new' })}
+                    onClick={() => navigate('/assets/new')}
                     className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold rounded-xl shadow-sm transition-all"
                 >
                     <Plus className="w-4 h-4" /> Register Asset

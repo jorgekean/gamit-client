@@ -24,6 +24,7 @@ import { ICSReport } from './pages/Reports/ICSReport';
 import { IIRUPReport } from './pages/Reports/IIRUPReport';
 import { RPCPPEReport } from './pages/Reports/RPCPPEReport';
 import { Register } from './pages/Auth/Register';
+import { AssetFormPage } from './pages/AssetRegistry/AssetFormPage';
 
 function App() {
   return (
@@ -45,6 +46,8 @@ function App() {
                 <Route path="/" element={<AppLayout />}>
                   <Route index element={<Dashboard />} />
                   <Route path="assets" element={<AssetRegistry />} />
+                  <Route path="assets/new" element={<AssetFormPage />} />
+                  <Route path="assets/:id/edit" element={<AssetFormPage />} />
                   <Route path="assets/:id" element={<AssetDetails />} /> {/* Fixed leading slash for v6 relative routing */}
                   <Route path="departments" element={<Departments />} />
                   <Route path="employees" element={<Employees />} />
