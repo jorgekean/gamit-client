@@ -1,52 +1,91 @@
-import React from 'react';
-import { Printer, ArrowLeft } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-
-// Mock data: Semi-expendable items (typically below ₱50,000)
-const mockICSData = {
-    icsNo: 'ICS-2026-04-112',
-    entityName: 'Municipality of Calaca',
-    fundCluster: '01 - Regular Agency Fund',
-    issuedBy: {
-        name: 'Jorge Gamit',
-        designation: 'General Services Officer',
-        date: 'April 11, 2026'
-    },
-    receivedBy: {
-        name: 'Maria Santos',
-        designation: 'HR Management Officer',
-        date: 'April 11, 2026'
-    },
-    items: [
-        {
-            qty: 4,
-            unit: 'pc',
-            unitCost: 4500.00,
-            totalCost: 18000.00,
-            description: 'Ergonomic Office Chair, Mesh Back',
-            inventoryItemNo: 'SE-FURN-2026-045',
-            usefulLife: '5 years'
-        },
-        {
-            qty: 2,
-            unit: 'unit',
-            unitCost: 12500.00,
-            totalCost: 25000.00,
-            description: 'Epson L3210 All-in-One Ink Tank Printer',
-            inventoryItemNo: 'SE-IT-2026-088',
-            usefulLife: '3 years'
-        }
-    ]
-};
+// src/pages/Reports/ICSReport.tsx
+import React, { useEffect, useState } from 'react';
+import { Printer, ArrowLeft, Clock, AlertTriangle } from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { api } from '../../lib/api';
+import { toast } from 'sonner';
 
 export function ICSReport() {
     const navigate = useNavigate();
-    const data = mockICSData;
+    const [searchParams] = useSearchParams();
+
+    // Extract context from URL Query Parameters
+    const assetId = searchParams.get('assetId');
+    const employeeId = searchParams.get('employeeId');
+
+    const [data, setData] = useState<any>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    // Fetch dynamic report data based on URL parameters
+    useEffect(() => {
+        const fetchICSData = async () => {
+            if (!assetId && !employeeId) {
+                setError("Invalid request. No asset or employee specified.");
+                setIsLoading(false);
+                return;
+            }
+
+            setIsLoading(true);
+            setError(null);
+
+            try {
+                // Construct query string safely
+                const params = new URLSearchParams();
+                if (assetId) params.append('assetId', assetId);
+                if (employeeId) params.append('employeeId', employeeId);
+
+                // Call the Fastify endpoint for ICS
+                const response = await api.get(`/reports/ics?${params.toString()}`);
+                setData(response.data);
+            } catch (err: any) {
+                console.error("Failed to generate ICS:", err);
+                const errorMsg = err.response?.data?.message || "Failed to load ICS data from the server.";
+                setError(errorMsg);
+                toast.error(errorMsg);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchICSData();
+    }, [assetId, employeeId]);
 
     const handlePrint = () => {
         window.print();
     };
 
+    // --- Loading State UI ---
+    if (isLoading) {
+        return (
+            <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-4">
+                <Clock className="w-10 h-10 text-orange-500 animate-spin mb-4" />
+                <h2 className="text-xl font-bold text-gray-800 mb-1">Generating ICS...</h2>
+                <p className="text-gray-500">Compiling COA records for semi-expendable property.</p>
+            </div>
+        );
+    }
+
+    // --- Error State UI ---
+    if (error || !data) {
+        return (
+            <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-4">
+                <div className="bg-white p-8 rounded-2xl shadow-sm text-center max-w-md">
+                    <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+                    <h2 className="text-xl font-bold text-gray-900 mb-2">Report Generation Failed</h2>
+                    <p className="text-sm text-gray-600 mb-6">{error}</p>
+                    <button
+                        onClick={() => navigate(-1)}
+                        className="bg-gray-900 hover:bg-gray-800 text-white px-6 py-2.5 rounded-xl font-semibold transition-colors"
+                    >
+                        Go Back
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    // --- Official COA Report UI ---
     return (
         <div className="min-h-screen bg-gray-100 p-4 sm:p-8 print:bg-white print:p-0 text-gray-900">
 
@@ -54,16 +93,21 @@ export function ICSReport() {
             <div className="max-w-4xl mx-auto mb-6 flex justify-between items-center print:hidden">
                 <button
                     onClick={() => navigate(-1)}
-                    className="flex items-center gap-2 text-gray-600 hover:text-gray-900 font-medium"
+                    className="flex items-center gap-2 text-gray-600 hover:text-gray-900 font-medium transition-colors"
                 >
-                    <ArrowLeft className="w-4 h-4" /> Back to Employee Profile
+                    <ArrowLeft className="w-4 h-4" /> Go Back
                 </button>
-                <button
-                    onClick={handlePrint}
-                    className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg shadow-sm transition-colors font-medium"
-                >
-                    <Printer className="w-4 h-4" /> Print ICS
-                </button>
+                <div className="flex items-center gap-4">
+                    <span className="text-sm text-orange-600 font-semibold bg-orange-50 px-3 py-1 rounded-md border border-orange-200">
+                        Ready to Print
+                    </span>
+                    <button
+                        onClick={handlePrint}
+                        className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white px-5 py-2.5 rounded-xl shadow-sm transition-colors font-bold"
+                    >
+                        <Printer className="w-4 h-4" /> Print ICS
+                    </button>
+                </div>
             </div>
 
             {/* The A4 Paper Canvas */}
@@ -113,7 +157,8 @@ export function ICSReport() {
                             </tr>
                         </thead>
                         <tbody>
-                            {data.items.map((item, idx) => (
+                            {/* Dynamically map over API fetched items */}
+                            {data.items.map((item: any, idx: number) => (
                                 <tr key={idx} className="border-b border-gray-300 print:border-black align-top">
                                     <td className="p-2 border-r border-black">{item.qty}</td>
                                     <td className="p-2 border-r border-black">{item.unit}</td>
