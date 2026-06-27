@@ -3,7 +3,7 @@ import axios from 'axios';
 import { toast } from 'sonner';
 
 export const api = axios.create({
-    baseURL: 'http://localhost:3000/api', // Point to your Fastify backend
+    baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api', // Point to your Fastify backend
 });
 
 // Automatically attach the JWT token to every request
@@ -27,10 +27,11 @@ api.interceptors.response.use(
             localStorage.removeItem('gamit_user');
 
             // If we are on the login page, show the error instead of redirecting
-            if (window.location.pathname === '/login') {
+            const isLoginPage = window.location.hash.includes('/login') || window.location.pathname.endsWith('/login');
+            if (isLoginPage) {
                 toast.error(message === 'Unauthorized' ? 'Invalid credentials. Please try again.' : message);
             } else {
-                window.location.href = '/login'; // Force user back to login on session expiry
+                window.location.hash = '/login'; // Force user back to login on session expiry in HashRouter
             }
         } else if (!status || status >= 500) {
             // Handle Network Errors (no status) and Server Failures (500+) globally
