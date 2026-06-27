@@ -1,0 +1,1 @@
+if('serviceWorker' in navigator) {window.addEventListener('load', () => {navigator.serviceWorker.register('/gamit-client/sw.js', { scope: '/gamit-client/' })})}
