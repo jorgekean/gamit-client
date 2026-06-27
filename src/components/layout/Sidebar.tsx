@@ -14,6 +14,8 @@ import {
     HelpCircle
 } from 'lucide-react';
 
+import { GamitLogo } from '../ui/GamitLogo';
+
 // 1. Explicitly define our props so TypeScript is happy
 interface SidebarProps {
     isOpen: boolean;
@@ -59,7 +61,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             <div className="flex items-center justify-between h-20 px-6">
                 <div className="flex items-center space-x-3">
                     <div className="p-2 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl shadow-md shadow-primary-500/20">
-                        <Package className="w-6 h-6 text-white" />
+                        <GamitLogo className="w-6 h-6 text-white" />
                     </div>
                     <span className="font-bold text-2xl tracking-tight text-gray-900 dark:text-white">Gamit</span>
                 </div>
