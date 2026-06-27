@@ -9,7 +9,8 @@ import {
     Settings,
     X,
     Sparkles,
-    Tags
+    Tags,
+    Wrench
 } from 'lucide-react';
 
 // 1. Explicitly define our props so TypeScript is happy
@@ -25,6 +26,7 @@ const navGroups = [
         links: [
             { name: 'Dashboard', path: '/', icon: LayoutDashboard },
             { name: 'Asset Registry', path: '/assets', icon: Package },
+            { name: 'Maintenance', path: '/maintenance', icon: Wrench },
         ]
     },
     {

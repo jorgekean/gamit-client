@@ -17,6 +17,7 @@ import { useConfirm } from '../../contexts/ConfirmContext';
 // Components
 import { AssetAuditTrail } from '../../components/ui/AuditTrail';
 import { AssetFormDrawer } from './AssetFormDrawer';
+import { AssetMaintenance } from './AssetMaintenance';
 
 /**
  * StatusBadge Component
@@ -302,6 +303,11 @@ export function AssetDetails() {
                         <button className="text-xs font-bold text-primary-600 mt-4 flex items-center gap-1.5">
                             Update Location <ChevronDown className="w-3 h-3" />
                         </button>
+                    </div>
+
+                    {/* E. Maintenance Status */}
+                    <div className="bg-[var(--bg-surface)] p-6 md:p-7 rounded-3xl shadow-sm border border-gray-100 dark:border-white/5">
+                        <AssetMaintenance assetId={asset.id} />
                     </div>
 
                 </div>

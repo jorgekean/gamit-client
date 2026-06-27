@@ -1,8 +1,58 @@
 // src/pages/AssetRegistry/columns.tsx
+import React, { useState, useRef, useEffect } from 'react';
 import { type ColumnDef } from '@tanstack/react-table';
-import { Edit2, Trash2, Eye, History, QrCode } from 'lucide-react';
+import { Edit2, Trash2, Eye, History, QrCode, MoreVertical, Wrench } from 'lucide-react';
 import { type Asset } from '../../services/assetService';
 import { Link } from 'react-router-dom';
+
+const ActionsCell = ({ row, setSearchParams, handleDelete }: any) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const dropdownRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setIsOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    return (
+        <div className="flex items-center justify-end gap-1">
+            <Link to={`/assets/${row.original.id}/edit`} className="p-2 text-gray-400 hover:text-primary-600 rounded-lg transition-colors" title="Edit">
+                <Edit2 className="w-4 h-4" />
+            </Link>
+            <Link to={`/assets/${row.original.id}`} className="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg transition-colors" title="View Details">
+                <Eye className="w-4 h-4" />
+            </Link>
+            
+            <div className="relative" ref={dropdownRef}>
+                <button onClick={() => setIsOpen(!isOpen)} className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg transition-colors" title="More Actions">
+                    <MoreVertical className="w-4 h-4" />
+                </button>
+                
+                {isOpen && (
+                    <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 py-1 z-50">
+                        <button onClick={() => { setSearchParams({ maintenance: row.original.id }); setIsOpen(false); }} className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2">
+                            <Wrench className="w-4 h-4" /> Add Maintenance
+                        </button>
+                        <button onClick={() => { setSearchParams({ history: row.original.id }); setIsOpen(false); }} className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2">
+                            <History className="w-4 h-4" /> View History
+                        </button>
+                        <button onClick={() => { setSearchParams({ qr: row.original.id }); setIsOpen(false); }} className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2">
+                            <QrCode className="w-4 h-4" /> View QR Code
+                        </button>
+                        <button onClick={() => { handleDelete(row.original.id, row.original.name); setIsOpen(false); }} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 flex items-center gap-2">
+                            <Trash2 className="w-4 h-4" /> Delete Asset
+                        </button>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
 
 // We export a FUNCTION here, not just a const array
 export const columns = (
@@ -58,42 +108,6 @@ export const columns = (
         {
             id: 'actions',
             header: () => <div className="text-right">Actions</div>,
-            cell: ({ row }) => (
-                <div className="flex items-center justify-end gap-2 transition-opacity hover-reveal">
-                    <button
-                        onClick={() => setSearchParams({ history: row.original.id })}
-                        className="p-2 text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-lg transition-colors"
-                    >
-                        <History className="w-4 h-4" />
-                    </button>
-                    <Link to={`/assets/${row.original.id}`}
-                        className="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg transition-colors"
-                        title="View Details"
-                    >
-                        <Eye className="w-4 h-4" />
-                    </Link>
-                    <button
-                        onClick={() => setSearchParams({ qr: row.original.id })}
-                        className="p-2 text-gray-400 hover:text-primary-600 rounded-lg transition-colors"
-                        title="QR Code"
-                    >
-                        <QrCode className="w-4 h-4" />
-                    </button>
-                    <Link
-                        to={`/assets/${row.original.id}/edit`}
-                        className="p-2 text-gray-400 hover:text-primary-600 rounded-lg transition-colors"
-                        title="Edit"
-                    >
-                        <Edit2 className="w-4 h-4" />
-                    </Link>
-                    <button
-                        onClick={() => handleDelete(row.original.id, row.original.name)}
-                        className="p-2 text-gray-400 hover:text-red-600 rounded-lg transition-colors"
-                        title="Delete"
-                    >
-                        <Trash2 className="w-4 h-4" />
-                    </button>
-                </div>
-            ),
+            cell: ({ row }) => <ActionsCell row={row} setSearchParams={setSearchParams} handleDelete={handleDelete} />,
         },
     ];

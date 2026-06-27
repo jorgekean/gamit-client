@@ -21,6 +21,7 @@ import { AssetAuditTrail } from '../../components/ui/AuditTrail';
 // Feature-Specific Sub-components
 import { AssetFilterDrawer } from './AssetFilterDrawer';
 import { AssetFormDrawer } from './AssetFormDrawer';
+import { MaintenanceFormDrawer } from './MaintenanceFormDrawer';
 import { columns } from './columns';
 
 /**
@@ -37,6 +38,7 @@ export function AssetRegistry() {
     const [searchParams, setSearchParams] = useSearchParams();
     const qrId = searchParams.get('qr');
     const historyId = searchParams.get('history');
+    const maintenanceId = searchParams.get('maintenance');
     const navigate = useNavigate();
 
 
@@ -241,6 +243,17 @@ export function AssetRegistry() {
                     </div>
                 </div>
             )}
+
+            <MaintenanceFormDrawer
+                isOpen={!!maintenanceId}
+                onClose={() => {
+                    const p = new URLSearchParams(searchParams);
+                    p.delete('maintenance');
+                    setSearchParams(p);
+                }}
+                assetId={maintenanceId || ''}
+                onSuccess={() => {}}
+            />
 
         </div>
     );

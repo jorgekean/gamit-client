@@ -25,6 +25,7 @@ import { IIRUPReport } from './pages/Reports/IIRUPReport';
 import { RPCPPEReport } from './pages/Reports/RPCPPEReport';
 import { Register } from './pages/Auth/Register';
 import { AssetFormPage } from './pages/AssetRegistry/AssetFormPage';
+import { MaintenanceSchedule } from './pages/Maintenance/MaintenanceSchedule';
 
 function App() {
   return (
@@ -57,6 +58,7 @@ function App() {
                   <Route path="reports/ics" element={<ICSReport />} />
                   <Route path="reports/iirup" element={<IIRUPReport />} />
                   <Route path="reports/rpcppe" element={<RPCPPEReport />} />
+                  <Route path="maintenance" element={<MaintenanceSchedule />} />
 
                 </Route>
               </Route>
