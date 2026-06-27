@@ -271,7 +271,7 @@ export function Employees() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Employees</h1>
-                    <p className="text-sm text-[var(--text-muted)] mt-1">Manage municipal personnel and their departmental assignments.</p>
+                    <p className="text-sm text-[var(--text-muted)] mt-1">Manage organizational personnel and their departmental assignments.</p>
                 </div>
                 <button onClick={() => setSearchParams({ action: 'new' })} className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold rounded-xl shadow-sm transition-all">
                     <Plus className="w-4 h-4" /> Register Employee

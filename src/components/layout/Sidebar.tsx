@@ -10,7 +10,8 @@ import {
     X,
     Sparkles,
     Tags,
-    Wrench
+    Wrench,
+    HelpCircle
 } from 'lucide-react';
 
 // 1. Explicitly define our props so TypeScript is happy
@@ -42,6 +43,7 @@ const navGroups = [
         links: [
             { name: 'Documents', path: '/documents', icon: FileText },
             { name: 'Settings', path: '/settings', icon: Settings },
+            { name: 'Help & Guides', path: '/help', icon: HelpCircle },
         ]
     }
 ];

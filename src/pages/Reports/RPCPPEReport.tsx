@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 const mockRPCPPEData = {
     dateAsOf: 'December 31, 2026',
     fundCluster: '01 - Regular Agency Fund',
-    entityName: 'Municipality of Calaca',
+    entityName: 'Organization Name',
     ppeType: 'Information and Communication Technology Equipment',
     accountableOfficer: {
         name: 'Jorge Gamit',
@@ -24,7 +24,7 @@ const mockRPCPPEData = {
             onHandPerCount: 1,
             shortageOverageQty: 0,
             shortageOverageValue: 0.00,
-            remarks: 'Assigned to Mayor\'s Office'
+            remarks: 'Assigned to Executive Office'
         },
         {
             article: 'Desktop Computer',
@@ -205,7 +205,7 @@ export function RPCPPEReport() {
                         <div className="p-4 flex flex-col min-h-[140px]">
                             <div className="font-semibold mb-6">Approved by:</div>
                             <div className="text-center mt-auto">
-                                <div className="border-b border-black uppercase font-bold w-4/5 mx-auto">HON. MAYOR NAME</div>
+                                <div className="border-b border-black uppercase font-bold w-4/5 mx-auto">AUTHORIZED OFFICER</div>
                                 <div className="mt-1">Signature over Printed Name of Head of Agency/<br />Agency Authorized Representative</div>
                             </div>
                         </div>

@@ -6,12 +6,12 @@ import { useNavigate } from 'react-router-dom';
 const mockIIRUPData = {
     iirupNo: 'IIRUP-2026-05-001',
     date: 'May 15, 2026',
-    entityName: 'Municipality of Calaca',
+    entityName: 'Organization Name',
     fundCluster: '01 - Regular Agency Fund',
     accountableOfficer: {
         name: 'Juan Dela Cruz',
-        designation: 'Municipal Engineer',
-        station: 'Municipal Engineering Office'
+        designation: 'Chief Engineer',
+        station: 'Engineering Office'
     },
     items: [
         {

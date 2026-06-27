@@ -173,7 +173,7 @@ export function Departments() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Departments</h1>
-                    <p className="text-sm text-[var(--text-muted)] mt-1">Manage City Hall offices and structural units.</p>
+                    <p className="text-sm text-[var(--text-muted)] mt-1">Manage company offices and structural units.</p>
                 </div>
                 <button
                     onClick={() => setSearchParams({ action: 'new' })}
@@ -244,7 +244,7 @@ export function Departments() {
                             required
                             value={formData.name}
                             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                            placeholder="e.g. Mayor's Office"
+                            placeholder="e.g. Executive Office"
                             className="block w-full px-4 py-2.5 bg-gray-50/50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
                         />
                     </div>

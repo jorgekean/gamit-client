@@ -16,7 +16,7 @@ export function AssetQRCode({ propertyNo, name, assetId }: AssetQRCodeProps) {
         <div className="flex flex-col items-center p-6 bg-white border-2 border-gray-200 rounded-xl shadow-sm max-w-xs mx-auto">
             <div className="text-center mb-4 w-full border-b-2 border-gray-100 pb-3">
                 <h3 className="font-black text-gray-900 uppercase tracking-widest text-sm">Gamit Registry</h3>
-                <p className="text-[10px] text-gray-500 font-medium mt-0.5">Official Municipal Property</p>
+                <p className="text-[10px] text-gray-500 font-medium mt-0.5">Official Organizational Property</p>
             </div>
 
             <div className="bg-white p-2 rounded-lg ring-1 ring-gray-100 mb-4">

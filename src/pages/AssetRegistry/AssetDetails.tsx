@@ -299,7 +299,7 @@ export function AssetDetails() {
                     <div className="bg-white dark:bg-gray-900 p-6 md:p-7 rounded-3xl border-2 border-dashed border-gray-100 dark:border-gray-800 text-center flex flex-col items-center">
                         <Building2 className="w-10 h-10 text-gray-300 mb-4" />
                         <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">Location Tracking</p>
-                        <p className="text-xs text-gray-400 mt-1">Room 201, Municipal Hall</p>
+                        <p className="text-xs text-gray-400 mt-1">Room 201, Headquarters</p>
                         <button className="text-xs font-bold text-primary-600 mt-4 flex items-center gap-1.5">
                             Update Location <ChevronDown className="w-3 h-3" />
                         </button>

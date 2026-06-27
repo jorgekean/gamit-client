@@ -72,7 +72,7 @@ export function Dashboard() {
             {/* Header */}
             <div>
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
-                <p className="text-sm text-[var(--text-muted)] mt-1">Real-time overview of municipal properties and equipment.</p>
+                <p className="text-sm text-[var(--text-muted)] mt-1">Real-time overview of organizational properties and equipment.</p>
             </div>
 
             {/* KPI Cards Row (Updated to use data?.kpis) */}
