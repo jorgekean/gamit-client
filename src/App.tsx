@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { HashRouter, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'sonner';
 
 // Contexts
@@ -33,7 +33,7 @@ function App() {
     <ThemeProvider defaultTheme="system">
       <AuthProvider>
         <ConfirmProvider>
-          <BrowserRouter>
+          <HashRouter>
             <Toaster position="top-center" richColors theme="system" />
 
             <Routes>
@@ -66,7 +66,7 @@ function App() {
               </Route>
             </Routes>
 
-          </BrowserRouter>
+          </HashRouter>
         </ConfirmProvider>
       </AuthProvider>
     </ThemeProvider>
